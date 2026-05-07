@@ -1,0 +1,1463 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SHEEM - قائمة المسلسلات</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; background: #0f0f1a; color: #fff; min-height: 100vh; }
+  header {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    padding: 28px 20px 20px;
+    text-align: center;
+    border-bottom: 2px solid #e94560;
+    position: sticky; top: 0; z-index: 100;
+  }
+  header h1 { font-size: 2rem; letter-spacing: 4px; color: #e94560; text-shadow: 0 0 20px rgba(233,69,96,0.5); }
+  header p { color: #aaa; margin-top: 5px; font-size: 0.9rem; }
+  .search-bar { max-width: 380px; margin: 14px auto 0; }
+  .search-bar input {
+    width: 100%; padding: 10px 16px; border-radius: 25px;
+    border: 1px solid #333; background: rgba(255,255,255,0.08);
+    color: #fff; font-size: 0.95rem; outline: none; text-align: right;
+  }
+  .search-bar input:focus { border-color: #e94560; }
+  .count-badge {
+    background: #e94560; color: white; border-radius: 20px;
+    padding: 3px 12px; font-size: 0.8rem; margin-top: 10px; display: inline-block;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 18px; padding: 26px 20px;
+    max-width: 1400px; margin: 0 auto;
+  }
+  .card {
+    background: linear-gradient(145deg, #1e1e2e, #16213e);
+    border: 1px solid rgba(233,69,96,0.2);
+    border-radius: 16px; padding: 18px 14px;
+    text-align: center;
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+    position: relative;
+  }
+  .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 28px rgba(233,69,96,0.2);
+    border-color: #e94560;
+  }
+  .card-num {
+    position: absolute; top: 10px; left: 10px;
+    background: rgba(233,69,96,0.15); color: #e94560;
+    border-radius: 8px; padding: 2px 7px; font-size: 0.72rem; font-weight: bold;
+  }
+  .card-name { font-size: 1rem; font-weight: bold; color: #fff; margin-bottom: 3px; margin-top: 8px; }
+  .card-meta { font-size: 0.76rem; color: #777; margin-bottom: 12px; }
+  .qr-img {
+    width: 155px; height: 155px; border-radius: 10px;
+    border: 3px solid rgba(233,69,96,0.3); padding: 4px;
+    background: white; transition: border-color 0.2s; cursor: pointer;
+  }
+  .card:hover .qr-img { border-color: #e94560; }
+  .card-hint {
+    margin-top: 10px; font-size: 0.8rem; color: #aaa;
+    background: rgba(255,255,255,0.04); border-radius: 8px; padding: 6px 8px;
+  }
+  .scan-tip {
+    font-size: 0.72rem; color: #555; margin-top: 6px;
+  }
+  #noResults { display:none; text-align:center; padding:60px; color:#555; grid-column:1/-1; font-size:1.1rem; }
+  @media(max-width:600px) {
+    .grid { grid-template-columns: repeat(auto-fill, minmax(155px,1fr)); gap:12px; padding:14px; }
+    .qr-img { width:125px; height:125px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>✦ SHEEM ✦</h1>
+  <p>قائمة الأعمال الفنية العربية</p>
+  <div class="search-bar">
+    <input type="text" id="searchInput" placeholder="ابحث عن مسلسل أو فيلم..." oninput="filterCards()">
+  </div>
+  <div class="count-badge" id="countBadge">151 عمل</div>
+</header>
+<div class="grid" id="grid">
+
+    <div class="card" data-name="باب الحارة" data-type="مسلسل" data-country="سوريا">
+      <div class="card-num">1</div>
+      <div class="card-name">باب الحارة</div>
+      <div class="card-meta">مسلسل · سوريا</div>
+      <a href="pages/001.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB70lEQVR4nO1Z0W7EIAyzp/7/L3sPdgrX7eFeBjmNVLqDYqlWFIITKLxhX++ADuqgftgF0COBgKaJxkpX9lv8BQH2mupXBEDdK13Z7/EXGJ8BibA7uLLSlf1eVKKKXPbFz0ZRgKZQ+/svfh7qAspDdpeYBKax0pb9ehRU4aRfnoJ0Zb8eRT3GBEpb7OTVGEWAIOEHcsjJrzby6oyi7rwFkNFeJSm6s1+IgjTOxKT4mii/J3+9oEQBkFwDiSonQkp+a8x+PYqREXYPQYAEILI2ZWP2i1EXAMyVNiBCFAWxjs+u7LfkL0GSMIkuzaoMOvnriSJYe9HJjLTPkvx7s1+NEuQCyK4a1REUCdaZ/SaUHFuyBINE0mns9L+eKBKkwFEdWUg45+/j1RDFlIqOpGpLsNT+6U/8RAl2kMsgEoSiL04/+mnZdpmMjWipqrzryn5nfyIyv1SFdZhjrTP7xSjePkFkfcWXhb4RXdlv6k/c4t7zqbUa+d+V/a58r3KWy2sifqw+a2P2i1HT/bbvOqxWGVmRzdqV/Z7+RLIX4y6xlJcbiTzn42R6bUl4F3pUfyd/DbvGkCVcNet9Hj0x2+SvoeiVzkTuic5+HDbdb2ckMIk/9yAn30924T4gXXozt7WMgD169cXm++01Xzyo/4T6BiHaFw3Q0bXPAAAAAElFTkSuQmCC" alt="QR باب الحارة">
+      </a>
+      <div class="card-hint">مسلسل سوري</div>
+    </div>
+    <div class="card" data-name="تاج" data-type="مسلسل" data-country="السعودية">
+      <div class="card-num">2</div>
+      <div class="card-name">تاج</div>
+      <div class="card-meta">مسلسل · السعودية</div>
+      <a href="pages/002.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB9UlEQVR4nO2awY7jMAxDHxf9/1/mHii56XQKzGVjDda+NLUIhBAkWpIj84P15yeggzqo9+UOMGNs1y/4afFU9vejHoABhGWRR4SR2zKW/SaUJEDlIRuM9LTMZr8LZSND+c7+HnU/r8Go9pFA97zxt6Ee0G4SFuBol/CyjGW/x18dSlZJvqLzXpap7O9H6SpTAstfNvfwGowSomQeZAlL2VBZB7O/GfWgEq/rrZyOCTH15lT2e1AWCakEVVS/ASe+vqLimpL49EPZEFIEbTD7m1HJx3UsVjZaK0uxPJb9Jr3vTltyF11dSeQwGMz+fpSNQDJVcEXrEbYs7+I1ErVKUzKUSLSpYsxlmcp+H6pGFC8ZWXG3lddElIS8TkYhZFWkZU4xmf0OlF0BZljzQ059/wklZQyt9hI2lp394exvRznCHqn3KidSXxz9ekOJVqwqu6rEACSffLyuXAV1D3SZEeaCKLdFU9lvrb8y+eqNZ9N9+qHL6llO/rmbxvZYjaenst8VX3nEquk9Jf5tnsp+k37l4frXrPr16Nd1vdxvs2qKFWCZHk5lv8dfL67J7H7NdE4+fkbJGadWhmacf74H+ISSVV8EZHQo03r2C9jfhLrcb6+uaN3bQrVHU9nv8Ve7hpceu8qvU6++rLer7H/+xoP6n1B/AcCD9DXQAW/EAAAAAElFTkSuQmCC" alt="QR تاج">
+      </a>
+      <div class="card-hint">مسلسل سعودي</div>
+    </div>
+    <div class="card" data-name="نور" data-type="مسلسل" data-country="تركيا/مدبلج">
+      <div class="card-num">3</div>
+      <div class="card-name">نور</div>
+      <div class="card-meta">مسلسل · تركيا/مدبلج</div>
+      <a href="pages/003.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB/ElEQVR4nO2a247jMAxDDxf9/1/mPojyuHMB5inWYu2igVMTKCEoEk1H5hfjz29AF3VRX8YLVDMjDLKsnvfKVPZH4oUBhEAW0OFaK2PZH0JJAiqjDEiJX6+MZv8o6vXp3qiTausEU9kfRblqWKUXlobwGoV6wcokmdT7XNfKVPZn4pVEkmWsfbVvprI/Eq9dsRpwPtvKVPZHUJVEq2ZVY0Rpk9IpXiNRioiorohqJqc/CqyrV99Q6shEbAkZp0FW/AazfxglV51PKtHz/AJw47UPm1R3nJvMbLBt7Knsj6DckcKSqRAq6XXr/bcoKYVfLpNi+RX3efyMKjvCuJqjupRle+TrT7yjqhGmObaiYLMrRrN/GLX8ido7lvIqJ8zlG97n8RNKxkZVwrrexz+E6xd+g4pEldY+yAa5PYrZ7B9GlZ7Qdk2w4hre/NrGK9vH+saExkkt4ObX+7BxOzdecj9JlnJ29f0a1R/dAVPb91b9WKdrU9mfidemUGvPnUjFEzvCaypKH+6qcPteS3jFu5jK/lC9B1K5WuMvrc/1v76g7Cruy5nuBrBeCZjM/lnUC7bD2bwJoMq1PvSey/4sSrawhSXawUdXr/6AslqvlnP4caT2L7B/BrWfb5d5L1yNMiXt9sd97OfbS0q4942Rq2PZH9VfD/3jRf1PqL/DivVGGaGrDgAAAABJRU5ErkJggg==" alt="QR نور">
+      </a>
+      <div class="card-hint">مسلسل تركي مدبلج</div>
+    </div>
+    <div class="card" data-name="أم كلثوم" data-type="فيلم" data-country="مصر">
+      <div class="card-num">4</div>
+      <div class="card-name">أم كلثوم</div>
+      <div class="card-meta">فيلم · مصر</div>
+      <a href="pages/004.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB90lEQVR4nO2awW4DMQhE31T7/788PQBeb9pKOdlENZEi1x4pI4TxAJV5w77eAR3UQf2wCxQrIwyyrFrXSVf2W/yFAYQsWYBMLOqkLfs9/kLhGRFhhdJn46Qr+03+SnNeSADJ00vQlf1WlLERIAGWmvDqh7IrhUW+r+9x0pr9UtTFeAbjZdR8Wn90Zb/FX7NiNeD8TCdd2W9BRRCNnKXYUOQxSbt4tUSFaHC+ikNG+JYY1tGrD5TwFFShXHE+kOG/xuwXo2QinKwQYLFRwQVw/DVZqlNH+jLlOFNFJOc+vqAUUtVYMmBnbcTJ97+ihBRp3nLVRBVe5z4+zCm1Um/Z2LWbm3ZX9ltQleLDNLSFK++3Zr8YpSixs9M1HJdNw7qTXdnviS+wFYk9ZH64baT81uwXoyqkStczwi02T7/wadeQYOUglyQbW0d/PVGyR1cVg4SmfuHREy8oR8Ht6rA6tmJ59OpPlIUtjEX07WWJEv3N2S9FpWSIYptJ1Ven1Trzx8nkeTkGtfUyZh+/K/s99dBY2FTpDdWYxqceum2ab1e7XnbezvEvAV3Z7/HX7Svdb2UJijNP+xOlLI2wsm0IMfX4BPbrUVa08UV0Du+R2iewX4O64J4zuqZFlktWnPrxYfN8m5ISrlo7+zpt2W/VX4t+8aD+E+obFVj+NQcmeCkAAAAASUVORK5CYII=" alt="QR أم كلثوم">
+      </a>
+      <div class="card-hint">فيلم مصري</div>
+    </div>
+    <div class="card" data-name="سكر بنات" data-type="فيلم" data-country="لبنان">
+      <div class="card-num">5</div>
+      <div class="card-name">سكر بنات</div>
+      <div class="card-meta">فيلم · لبنان</div>
+      <a href="pages/005.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB60lEQVR4nO1a0Y7kIAyzV/P/v+x7iAPp7jzMy5LcHRmpLYOlWhYEE0rhg/j6BHRRF/UjXgDjSSCg0tDumcq+RS8IsGoiAIEiRGr1TGXfoxdozQBLxmy7Zyr7Jr1qMKfkb73xX0IRKkPtxBv/NtQLSIUoABAzge2esezPo6AcTnrzS8hU9udR1OPZ2UuPJWAu+xYUAYKMC6AYcoq/GnlNRlHaBoxEeC8CcRnO/iAKKnnK13oXdPPXNxRDFBEQRC0RJee3yew7UIIIKvI94URG5qSczf48iqQgOtMz9IPW8jmb/UnUy/pYGcaooscVbfmnsm9CMb0XnbCiOKGV/EezP44SrJXksQWkbuEpJrM/i4IEyR7VDgJanlXRnMq+yU94Hkrc5ouR03TH1yPoMrQTl7eNzCrFrU+8QSnWQdAV/KiCxV4Stx79HbX8vNYeiHsu8vrVGoyTIFfsw9arFHNiwZzKvqf+lXkqtPM/qEZ2Kvu++sSqpxaXGs1bn6hR6qs+rvXQsqO4/v4Z5Xw7zLwPPXKC3v3jM8r59t48ZkZT1iimsm/NX3b2ygfk7eavtyiGdGSImE3d+ViifA+wHb22zY+d5FT2TXqVNVLxKRNtvpzFprLv2m8De03E/vBr2Yqp7Fv916E3XtT/hPoDd6UY+UhKSz0AAAAASUVORK5CYII=" alt="QR سكر بنات">
+      </a>
+      <div class="card-hint">فيلم لبناني</div>
+    </div>
+    <div class="card" data-name="الاختيار" data-type="مسلسل" data-country="مصر">
+      <div class="card-num">6</div>
+      <div class="card-name">الاختيار</div>
+      <div class="card-meta">مسلسل · مصر</div>
+      <a href="pages/006.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB/ElEQVR4nO2ayW4bQQxEXwX+/1+uHLhMx8nBpyGFNAVII3UBLhBcqknL/MB+/QR0URf1l32B4skggyzLCB8nW9mP+AsDCIEsQD58CNrLfsZfKD1DhBUCHNEWJ1vZD/mrzEo3geSjE2xlP+ovowoqp+/meG1FfcGTjJaj3ud7n2xlP+OvLO7RGXWe1pet7Ef8ddQpAThfx8lW9iOoCKLOPsUPAgkkTfHairIEclZ4gxFCthH46q8/UUoHRUCBkHG4MfXFYvYvo2SqMWKB44eWrcD112n2U91dRd44vtk29lb2U3rV5A3bdQNK6ZoxtpX9TD6WyrIyHStB231b2c/Ue2fyyRFn1RW5/fFfKOcoB5A6EWMglpJ1MfuXUZWP37piDg2zqq1lP5SPGEntLsenaKW/mP3LqJyl+pBgkLn4dMut7KdQVcIcyr6Kf/tsN/u3URFGFqknFE8tM3azfxeFnbfsUPl2q/sW+1ffP/bo+xrnlGBN/8m6+7THcr5aZV5YFXLKTjDCaytKPh97UVudUXFB2sp+JL4qtmLX4V7b9rBnL/uZfKwtdk8L3ffHO5/4Zud+2/3PE+Gx3H6M8PoElMiNmpXDVogh9Sewfx9l9f3b0rlS+wT276DO/XYNWE1EGXDnE9/s3G9nj4z2eN7D17If1V8v/cWL+p9QvwGpxQFJa/mM8QAAAABJRU5ErkJggg==" alt="QR الاختيار">
+      </a>
+      <div class="card-hint">مسلسل مصري</div>
+    </div>
+    <div class="card" data-name="مرايا" data-type="مسلسل" data-country="سوريا">
+      <div class="card-num">7</div>
+      <div class="card-name">مرايا</div>
+      <div class="card-meta">مسلسل · سوريا</div>
+      <a href="pages/007.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB8ElEQVR4nO1Z0W4DMQizp/v/X/YeMFx27aQ+BaYl06p0sTTLggAOhQ/W1yeggzqol3UBjJ1ACKAo5j5PprJv0QsCAIIQRQDUrRQAzmXfoxcYyggRVlaLqpOp7Jv08iIAgRlUSyWYyr4VJfnKIgGIHMJrHkpyTPm+z886Gc1+K+pClUGKgrie5pep7Fv0enas8s9yMpV9C8rVEEtjEd9JgGQXr6kokUCloqJzJSgJBHT6r58oWiAoI4uCXCCjvxjMfjOKqg9AhLy/21YcvZZ1oeYgeRByDlKybGd+vNcVUVWlUG7sqYq6Fl5TUZ6H8qq3dBQhRnidfHygIhkFUdSakTj18R0qbi9am0zExa4YzX4zKr2uR1W0aWjfcCz7/aiYqDOg5CG7Li7FX6ey74mvbCZsTQDORd9fLbymopyPpQyQhuEi5Fj2LfkYLURmoH9VW+nk4wsqiqIoN/UiFJf98SdeUaGO7RxFe09m7J3+a1luGbJDzVdId7HwtDSVfZM/UVvf8K4Ct48/lX2TPwEAkN0c3rFVZs9U9j3z9uPBkVLNj8efeKz1fTucMCgVq0FpLPteVEyMaeWUiKc+/oJSqBTFkuuT2l9gvwd1Afc7o+j2QhQrRVt4TUWt79tID1/1WOQZfCr71v5r0388qP+E+gYAD/4weRNWhAAAAABJRU5ErkJggg==" alt="QR مرايا">
+      </a>
+      <div class="card-hint">مسلسل سوري</div>
+    </div>
+    <div class="card" data-name="طاش ما طاش" data-type="مسلسل" data-country="السعودية">
+      <div class="card-num">8</div>
+      <div class="card-name">طاش ما طاش</div>
+      <div class="card-meta">مسلسل · السعودية</div>
+      <a href="pages/008.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB9klEQVR4nO2awW7DMAxD+Yb8/y9zB0m2u+6wy2wNswo0bkMghCDTtBysH8THT0AXdVHvYa+D8eP1Tlf2+1GPMklIxkiy4orHna7sD6GA8UemKGsr77RmfwxF1hbSnJkNePVFIX/J1G8/8a+hHqkyhCXJpIB53mnL/uj6+M2nIF3Z70fhdYyV4sXLvOzK/ggKCYEIH+FyYiAmaj+vziiclgtJkN4LKb6as9+Iki2XuU+Jj4kYV8tXv5Z4JMuQ5WSMw4Yp5qTP8OqMQrKRHEYCCaQli63Zb0chGYxyV2RkhfLX8tmY/WYUlZSwqESiyldk8tqyP7XfznRBJs8QtiLFvzX77SiHVc0FkWV35LRgndnvRU1/HxI/NpBjtURuy/6Q3o95iF3mK4XNt77eUMT66Kgv2SL2j2Eyrt6/o1zTEcguWLSmdfvRLxHTUNawFnGh3Be6+rUEo7IicXXqUcsAMjdfM6KEpoUIHcuDolFkXdkf6k+4uqvxe2mtyr79iTWW/irDf+WOaJZeV/ZH+jm1U7Qo4UqTPzLWlf2RfJVrqMaXSRXLw7Wr919RUJuhkaPoghGD3uy3op45xKSjiBPI7B76CK8/gDIS9ZaOyV60r79fYznfzlE2DT3eDbh6v8SjsUCG1SdLivL216+usZ5v73niRf0n1CchdQMspAlMmQAAAABJRU5ErkJggg==" alt="QR طاش ما طاش">
+      </a>
+      <div class="card-hint">مسلسل سعودي</div>
+    </div>
+    <div class="card" data-name="العندليب" data-type="فيلم" data-country="مصر">
+      <div class="card-num">9</div>
+      <div class="card-name">العندليب</div>
+      <div class="card-meta">فيلم · مصر</div>
+      <a href="pages/009.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB90lEQVR4nO2awW7DMAxD+Yb8/y9zB0mO1+zQy2wVs1EkTU0ghGDJpFysN8bXO6CDOqjncC0wy5YtWbLjsSBd2a9HXZIsSchIkoWMLd8zbdnviZfQiA4RKGR8z3RlvxUFSEYCy4gmvPqiXDHKZfX3b/w41CVNscGyMHkdM13Z74lXJZ4xUbbies90Zb8exZ13ZKVXJuaUkV3Zb1lfWJl9GbNMxfjFwm3Zb0FZROWKCEEoVyzbgl282qJI4ZWafi70kuXe7NeicJQsl0Rlnq1AdmW/xz+WaVSaoLq5rOTxj2Ok63FZoPpgQmAcP/RjXCXmcTnuSElkyAi2Zb9Nf5EFPiMUIuyu+13Zb0IhmVxbI0pZzo6eeKIcvlHkNeVqtClO/+sFBbLAxuWGNIrY0V9PlJHsKmGp7evp7I9PlBGhVcsAZcE3kZyt2e9BGWGQbZAsGG2d/uyXoa4yPaNLER38XGQcPfELitIRKHdHyiSFiG3NfinqGnY73bZTjkXssqXflf22fCwRYYwrM12rrS37betLqqI1eqyinHdf9pv0lz36hFW0Mkszip3Zr0VN59soNGtKsNwjvYdXV9R1fzV18vjyh4q+7PeinDECAZ5OiT6B/RrUfL6d2Ti6Xx5zXdnvQQFQW+LoSYwT7lPvpzGdby9640H9J9Q3N4z5Pyoj8gcAAAAASUVORK5CYII=" alt="QR العندليب">
+      </a>
+      <div class="card-hint">فيلم مصري</div>
+    </div>
+    <div class="card" data-name="ذيب" data-type="فيلم" data-country="الأردن">
+      <div class="card-num">10</div>
+      <div class="card-name">ذيب</div>
+      <div class="card-meta">فيلم · الأردن</div>
+      <a href="pages/010.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB80lEQVR4nO2Zy27lMAxDyUH//5fPLCTZbtoBuoo0qNVNUhO4BCHrwRj9IP78BHRRF/UlPiTHE5KRjDGyOE6msm/RS0iSZWQsxYO0T8ay79FLTmUUaSUvzfJkKvsmvTKMVallc3SCqexb9WInFRLWFmwq+ya96jISJQzH4z6Zyr5Hr2yD0Rm9jkydjGXfotdzYiX/jpOp7FtQkUSWFNNE/MOSLdnu4jUW5ZgfosIjIcsyIIeIk9m/jyIEEs7MMiLfomNOZv8uas0PspAVfXGNrZJ09ToDqq4jqsgj4g1AMJV9U3/M5TrG+1Csdkg38ZqMMrJNVDDKqEgZ7318oowRYeNEgmVX1O2P36FiqHfNYaeZUzvkYPYvow7TJjpkLERpGtadnMq+C4XkdHAcLTPyrSb92ezfRFUTzMwqE7qy7vqFj/jYkq2pIi5nDf3y9e93pP/l3RhTs23s3HniC8ootkXY7mqqeP2JM57fO9ZtdHhg0Sinsm+p93kXI9ZUX04rvt8fj/B2V6PUO/ehLGWRb1PZN/kT6yGuINuwiPfrT3xCAdRmXRm23ht5TUSd9R4Lx1LEclvp4fU/oCwZSrW1Vd596B8oRH4hWkbY9ScecX7fLoOVsHiWZzGXfY9e9X17FXxq185xdSz71vnrpV+8qN+E+gtTS/85UzhmtAAAAABJRU5ErkJggg==" alt="QR ذيب">
+      </a>
+      <div class="card-hint">فيلم أردني</div>
+    </div>
+    <div class="card" data-name="وادي الذئاب" data-type="مسلسل" data-country="تركي">
+      <div class="card-num">11</div>
+      <div class="card-name">وادي الذئاب</div>
+      <div class="card-meta">مسلسل · تركي</div>
+      <a href="pages/011.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB8ElEQVR4nO2Z0W5DMQhDj6f+/y97D0Bu2m1Sny5UC31JG0u1EATHkXkjvt4BHdRB/YgHKFZGGGRZta6dqexb8oUBhIwsiAVcO2PZ9+QLRWaqrBAIy2tnKvumfFUIqrQyUW28PgBl55ElAZaG8BqFesCqJNmK8x45ysxdvKaiHqwxKMv4qiq5dsayb8nXdk4JwPnZdqayb0FFEQlwDEfldwkkdfEai5JgtaJDuQrZRuCjv15Q9lZUqVydAzL0xWT296JClHqd7TEXl2wFOPnaIvSEllQV1YOyVbJ/Kvum+6NyElr2dje6amwq+6bzHkuKM0wOk2L5FacfX1GyIaT9c0dy5uNvKFdhAS9mTjXqYPY3o3IwpidRDhhpGlZPTmXfpL9wCXmsXeaXKJvM/l5UmYJhSMiX5lKdXy28BqNSzUMoC6cR5i1ng9nfjIr8QPoRXov1m21PZd+FslNVlKiPQhPm+BNPUf79JVJjVFpZbfK5D+2xNWP1oW27zELD6ccrSqaSNoWq1GqhMx/32N63nW8dl6xQ3rzHsm/yJ+B69Kj7ZKr+4088x/6+vfoxM1b+9Fz2vSjVi5olyghDR6/+gXJY93E/0v6k9gns70Ht79ssR8Iqz/X4E8+xv29TGXPdG+sePpV9q/666R8P6j+hvgH/rf47M3wnHAAAAABJRU5ErkJggg==" alt="QR وادي الذئاب">
+      </a>
+      <div class="card-hint">مسلسل تركي</div>
+    </div>
+    <div class="card" data-name="زهرة القصر" data-type="مسلسل" data-country="المغرب">
+      <div class="card-num">12</div>
+      <div class="card-name">زهرة القصر</div>
+      <div class="card-meta">مسلسل · المغرب</div>
+      <a href="pages/012.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB8klEQVR4nO2ZyW7DMAxE3xT+/1+eHkhKcppDL7UYVALiJRrAA4LLkJL5xfr6DeigDurHukDxZBAeL8Jzpyv7LfbCEFZzXS2DPHa6st+EkgTpaMN4LDut2e9FyZp2e+SLn4yyXyz151/8MNQFZSEZYSsSWKR+7+LVFXWxZiurfp4ZbQuvrij59px2MrrFZVf2W1ACIaEqkDbg+Gsjr64oA7IF6V5Saq8Rk43ZP4wKZ1ofU6Xm3Ri7K/s9KIdRogeynP+AnfmtM/tnUaG4XF6VqQvw2Dj+9YKyiJYxAzHcLDpwb+TVEYUzGhnXUSKBcK/jX3eUjJwaVQYsDRtu5NUU5eiyM8drdEfglGCd2T+LmvpegKMTcvSS87Ur+536K0ph1sshKOLalf0ufW8cuksIO1qjLJJ2a/bPozSGhBGKiDDdHLY2Zv8w6ip5CsvJh4xS6p98f1vKM46c32SSn8McYZ18P1e6UNgq6qFrTmGVxO/Kfk99rJ5xdJAe7hXy/9THFeU0ClUSI0JrZMHxr2Ut59seI9YS+RGsx14vKNtOy+RgZ4zxsX30xLpG/iqhb9d8tW4nf71FKTK9FEaU09VOPL5HxZwQSHkv5TnRR7B/CLWcb1MpTMTx9pgetmW/eT5RqmKqr5QVXdnvnH899cWD+k+ob0SBNsBxny5iAAAAAElFTkSuQmCC" alt="QR زهرة القصر">
+      </a>
+      <div class="card-hint">مسلسل مغربي</div>
+    </div>
+    <div class="card" data-name="الدولي" data-type="مسلسل" data-country="السعودية">
+      <div class="card-num">13</div>
+      <div class="card-name">الدولي</div>
+      <div class="card-meta">مسلسل · السعودية</div>
+      <a href="pages/013.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB9UlEQVR4nO2awW7EMAhE31T9/1+eHsA23bZST4GqZldRFI+UEcIw4Mj8wt5+A7qoi/pi76C4M8ggyzLCZWUq+xZ/YQAhLAtY7torY9n3+AulZ0g/hdPkvTKVfZO/0rw3ZXVhD68/gDJCgrhYGsJrFOodzmY0inyfu3GvTGXf468MJFnGJ6rktTKWfYu/qmI14PyVlansW1ARRCIyGIoHijwmqYvXWJQEckaTM/Ej2wh89dcLys6gUkaWjLNAGnk2+2dRIUod/5D4VNkKXH8V2+oUMn9ZYPl0Rbr947Hsh3YldAr7cNjy5FT2XfsRyFSV8RYjigy4uex79ISJnC9vSRG69dbH71A+G086MRYDMPfxGokqQ5tMWgLIoeFK+VPZd6EspJ31HfEmttKfzf5J1AqpE0wRX9R0P5Z9Uz8U0y7tdtsGufhsMvtnUTFfDXF/NITlM9i5eqJYZvUl6iF7olUHrv76BqXQX6G9Ittb8dBXf32yzPJl82WZTGERW3Uq+65+O27z/NFrFO11qjaWfUu+X+1jDHXgxJay8x7Lvqc+vox0ZO/+8c4nXqyeb3tp1fTYUq5z2feiFJMKYWkPwtCtjz+g9qcTYKkeqf0F9s+g6vk2+YmJo1Au9drCayqqnm/H9TTgrLnOWPat+uuhN17Uf0J9ANSD3WSebxInAAAAAElFTkSuQmCC" alt="QR الدولي">
+      </a>
+      <div class="card-hint">مسلسل سعودي</div>
+    </div>
+    <div class="card" data-name="عروس بيروت" data-type="مسلسل" data-country="لبنان">
+      <div class="card-num">14</div>
+      <div class="card-name">عروس بيروت</div>
+      <div class="card-meta">مسلسل · لبنان</div>
+      <a href="pages/014.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB9klEQVR4nO2awW7EIAxE31T7/788PdgG0vawl4KrYmkVEkbKyDLD4I3MG/HxDuiiLupbvEAxMgIvN54zXdkfyReGzJoFGFlY8pjpyv5MvlDmDDJlqkLLma7sj6OMrCi1TW/8yygLf8nUL7/xz6FeUBmSQbaGgI2ZtuzP5Et1I6t+oV8105X9fpS8jkvn/dgC+rI/ghIICaWnwAYcjw7y6ooyqVuUmxDhvcaabMx+MyqKKdZeDWMhxtUYuyv7I3pvUBYZluWwYcSa9BlejVFxbFT6CSGQAEu1KBuzP4FSmq8oMwvj2CBz+2zNfitKlZR0p7LAmr0J4b7sz9aXFTsj2ZzwEP/W7LejbGQ5N0TN01Ho2jFeHVHT34fE5wpUdg8t6/YL1/B0Wy5zb1exhdW//uuBikyFglnYcTTKTdJX758oK5cf1Z6I/DE71Y3Zb0ZF/350I3Iop9nn6v0zZmWRLix6X7UNCOvq/YwsoXCq5VXDtaZX1dWvNbz0ITCrS43p259YY+mvTsOVJ6LRuGjL/oje10lxNCmGyR8Z68r+1P4IkapUMKILln+uXb1fY+pXZWg4/rpc/foRld9LSJHEPIDr+vs1XnOYzj7cRdn8MK9d2R/K1+NjE8fXJvPbgFtfS6yd1DotjkfDVnRlf9R/bXrjRf0n1CeDdBIV/5N0TwAAAABJRU5ErkJggg==" alt="QR عروس بيروت">
+      </a>
+      <div class="card-hint">مسلسل لبناني</div>
+    </div>
+    <div class="card" data-name="المنصة" data-type="مسلسل" data-country="مصر">
+      <div class="card-num">15</div>
+      <div class="card-name">المنصة</div>
+      <div class="card-meta">مسلسل · مصر</div>
+      <a href="pages/015.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB70lEQVR4nO1ZQY4DIQyzV/3/l70HJ4Fue+iJpFqoNAWNpbEiMMZQ+KD9fAK6qIt6aQ+A7gkgVANC681U9i31ggCAAF0hgSJEqt5MZd9TL9A1EwDPMCJkLd5MZd+LYswtHvvil6MICnizY34F+yOoB5AVcq3EErB6M5b9eRSU00lvfgmZyv48inrq04ZCKfRtvAajCBAkiKiVvFmSacAmsz+PEgDKPsJPwt6LgB+D2R9GhX5tay91S+HJdPVraw8fhBhOXpS3SeaaVA+v2SiFhAEiiOwyF+Vs9odRrpBqRxRtw6DaPgezP4yCvBuWioVoLVcGXf36g5JAQWLOKIcTKvEfzf44SmkkXKp1Ogo1m83+LAoSJOlpQao8qzycyr7pPERAPmJ7ZAcbin/z1b1RFXuJyqCQmVLcfOIV5TnFTKTpoq045+bRW1v5BH3h4X8x3dddj0+t1uMSr826xngs+575lYdHnx657EVNsqnsu/zEfj+0XKqHN5/Y25av0iIfU0slaC28pqK2+22BKVxhJKpiU9m31CtdQ2Q4EtN5KTOKqeybUHTelaqlzHgq1B/NvguVmyK9CVDO8HXX43uUc0IAYe+ZmfRXsD+E2u63YXG3dw3zFSo2lX2P/4rOinGW+4q4Zyr7Vv916IsX9Z9Qv8M5Ffze2v0KAAAAAElFTkSuQmCC" alt="QR المنصة">
+      </a>
+      <div class="card-hint">مسلسل مصري</div>
+    </div>
+    <div class="card" data-name="عمر" data-type="مسلسل" data-country="السعودية/قطر">
+      <div class="card-num">16</div>
+      <div class="card-name">عمر</div>
+      <div class="card-meta">مسلسل · السعودية/قطر</div>
+      <a href="pages/016.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB/ElEQVR4nO2ay27lMAxDeQb9/1/mLCjZmbaLrmIVYwMXeZjAJQSToZVg/WD8+Qnooi7qy/iQyJkl5HWBvGemsj9SL1mqqhlJFsYGr5mp7M/US6Rmu2T0qquZqewP1atGVlNJspV5iNdU1LNelG/xBTWV/aF6JVNggU0MrL3sEK+pqA+tB2S0WL8ssp6Zyv59FP50HtNvoz/GazAKCYEQIFm2JOfWQV5TUZZUvlVpAiV7LU0OZv8yKovpqb1KqXW0LHsq+yN+70dgNcaJ+IomfYbXYBQpU5RnhEROaVEOZn8AZRK+ev+ILGfJ1eNzMvt3UbJjUcqxTasNzZKvf31FYWJdMS5Izcr8p7N/F+X4l+NYrN1Ru9ls9u+iokR7LybXPan1efX4D8qiDN+0byVQ4GpWDGb/Moq0oRXzErsJtu4d4TUZVV1nBLbQ3hndfvR3KKRKE/F3i61Fbl79hMquOtJLnxBRfl8CHcz+ZRQ7xCfjVwhbQV94LvtTeUKdJPRMqbm8/YnnePRXUdoTWVpej84jvKaiHu+3d1+nQ/6q2FT2R+q180Ryar3wyEQMbCr7QyjosEXXKF0wqoyj2Z9CUQGMPARwevi+evweVW1DqeI93ZP+FexfQj3ebyvlqk8C3NK8fv8c7K+86N3iurVixVT2R/PXS/94Uf8T6i9LZggs78aEHwAAAABJRU5ErkJggg==" alt="QR عمر">
+      </a>
+      <div class="card-hint">مسلسل سعودي</div>
+    </div>
+    <div class="card" data-name="عيلة فنية" data-type="مسرحية" data-country="الكويت">
+      <div class="card-num">17</div>
+      <div class="card-name">عيلة فنية</div>
+      <div class="card-meta">مسرحية · الكويت</div>
+      <a href="pages/017.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB9UlEQVR4nO2ZwW4cMQxD+Yr9/19mDpRnvE1R5NCOFMQOsOvNEBiCkGVKwvrC+vUV0EEd1Kf1ksjOQvL2w/eTqexb9JIlCcnRzsLY4OvJVPY9epVWWUZXyF1PprJvRiEJw99R//KN3xqFJW+h9v/f+P1QL2kpFLlMElgOprt4TUXJK5z8h78Fmcr+eRTe95SH8NsVMJd9CwoJgRBGckLO+Vcjr6koS8JX3pJA8V5I+RjM/mFU5S/v2xzEfFs++Wtbr9h6ZAnLONck60y6h9dkFLERkQwhgSSXim28hqIwsfXUsXzTr4/XSBROfAkLKzb18hUl3lj2XSjK0bMSF8RWVPKfzf5JVPVzrjQvx1Ms3fJjKvs2lOWyp6WQDXg5/uHsn0UBVDxxF5Msg9HGayrKaUokg1myRepHI9kn339CsdU+5L682znnPG4rfmLvRVC21dvDqexb7scrskodTCWyeLMTX9va4ovbWOSSvINsKvumekiV4Otzdb3QGkkOZv8wauuvljYVWr5Lpbns+/KXZFeWV+TSVlxOZd9WD6WEzNZUFqvhGud+/A1F9bu0ph2qLhjZzGb/KOp1b7eho2tWtJzFVPatqGi1ziHViz719tva5tu1qaZhcn+pN5X986i3+fYaPW762fKZD91rn28/88aD+kmoD/4m+Te4PoOYAAAAAElFTkSuQmCC" alt="QR عيلة فنية">
+      </a>
+      <div class="card-hint">مسرحية كويتي</div>
+    </div>
+    <div class="card" data-name="مسرح مصر" data-type="مسرحية" data-country="مصر">
+      <div class="card-num">18</div>
+      <div class="card-name">مسرح مصر</div>
+      <div class="card-meta">مسرحية · مصر</div>
+      <a href="pages/018.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB90lEQVR4nO2awW7EIAxEZ6r8/y+/HmwDu+2hl4KrQqSIhJEysowZz67RD8bHT0AXdVFfxiM5ZkgW9WCJudKV/ZF4CSmiRt2xJDNWurI/hLItZaJliLKs5Upr9mdRxjNuW774d1EWvEXql7/451CPVBEykoSzgOGx0pb9fpSodOKbqyBd2e9HmXVuquj7ZV92ZX8EZcmyFZeIlCNeHeTVFYUkE0o1hJdTew2V0Zj9ZlTVL5ZbvSHvt37NEedjSnkLY0LiK/YkZ3h1RqGoXJZEzGLq2pSd2R9AWYqTkQwZ2XDX8dma/VaUiNOQWbDGEal45NavNxTIIEwVLpslhr3Zb0ehdHCwhZfuiJRgndnvRT01qdJlFoVvjH39wleU7XQHPcWXo9pz8+tleLSKRk75Ff6EXHuzLfsz/RDVQsb+C3d12jnXj35HpaIovUUKsmomm7PfinrSrLcqUpFi1U+Gb9iV/Rn/K6V8/ormRV5UynVlf8b/qv6xLJ1yvTyC2Jj9ZtTir44EU2SZxzZty/5Q/ZIkgYcLnUJiRKwr+0P9EJCRyY57iHzB3Y8vA6YlEQ326rhmzLqyP4pyqFQ7guhSZHc/LuOZU8KciBpWMj86ya7sD8VrnJHp3UfoRLmHbdmf6releSYuf/wasqIr+6P6a9MXL+o/oT4BUU8JHNvopnsAAAAASUVORK5CYII=" alt="QR مسرح مصر">
+      </a>
+      <div class="card-hint">مسرحية مصري</div>
+    </div>
+    <div class="card" data-name="شريط الذكريات" data-type="مسرحية" data-country="الكويت">
+      <div class="card-num">19</div>
+      <div class="card-name">شريط الذكريات</div>
+      <div class="card-meta">مسرحية · الكويت</div>
+      <a href="pages/019.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB8UlEQVR4nO2a227DMAxDyaH//8tnD5Icp9mAPQy2htkt0jQmUEKQqItr9IP18RPQQR3Uc1EOhoQgbsj7hHRlvx71koQkWViSkIVBXDtt2e+xl1yWQQ5DWZhrpyv7rSgLGUs2wnITXo1Rvj75HvWbv/jXUC9ptg3pY8hMO13Z782Pz1dBurJfj/LlW06lVyTJOSK7st8Sj0ah86Vb8SWeRGR2Zb8nHhm1alWr+ZAI1hOPNxSp8nLW99YUjIjW7BejnPnQZSXPuwSiLfst8Vi9YmXK6oUyPjnx+EANayHC24RtTGTN3uwXoxxvS2SWtEZ3FI8as1+PAmMjSwaH+sduKX9j9jtQkRSR8ND9qvB9/OuJcpT0zmuWqzGmOPOvJwo5RoSep4Rpx6P3d9TlT5IMxKwwqguOfr2jMKH5RFhGdpSEcVixMfvFqNE1ZtVK9Yy1hTj16rXGlP5qiPDUFnH6oS9Q0zg1ZaxO1uLYqDf7lahXnQXV6It0tyz7Ofr1jhp9dUwKPUaGUIHZmP1i1GtI1dQEEXOeHPYc/XpDEUkxLiH2VOvIqe9vazrfjnJ1lGDXg77sN9krFkY2ofnzHyr6st+LIhKjbNk5+eLo/W3N59vZXadbxXGkTjw+ULbtUerXTCKMeOY59zWdby/6xYP6T6hPQRsk9k58YXUAAAAASUVORK5CYII=" alt="QR شريط الذكريات">
+      </a>
+      <div class="card-hint">مسرحية كويتي</div>
+    </div>
+    <div class="card" data-name="أنا وأنت وبابا في المشمش" data-type="مسرحية" data-country="مصر">
+      <div class="card-num">20</div>
+      <div class="card-name">أنا وأنت وبابا في المشمش</div>
+      <div class="card-meta">مسرحية · مصر</div>
+      <a href="pages/020.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB90lEQVR4nO2a0U5EMQhEzxj//5fHB6Dtrprs04KxmLjX20mcECgDrMwL9vEK6KIu6pt9guLJIIMsywgfJ1PZt/gLAwhhWYCMIk3zZCz7Hn+h9AwRVmj5LE+msm/y12EVWpKPSjCVfau/XN4SBovtsKnsm/xVyWgU933+XidT2ff4K8ugLGOdp/XHVPYt/npWrI4fHSdT2begIohW9ileyEggqYvXWJRCP0Qqxq2PkG0EvvrrEWVM3O4ZWSgSMkJOHs3+zSj56IAEVgjWlK0A11+HpZ6IhjEEfeagnBJMt3/ctupjBlSVxeoh1cRrMkpCirJouQYVOaO4+fhoNq4Px6frrQ0Yeyr7nvqYeit12DnMqR5yMPs3o2RKdqEtLLJkVk5OZd81nzBn2+iokuvKv/XxERUyHtuhJqS4uuSaUUxm/17UIRqqJObAMHPTN76eUMqimDoi9EW2Q3Dj6weUrLro93Q1o+3OJ06LfUeorSqLhLrwfjOVfY+/5KO1jsiKh1D8LbymorSnq2IvarNkkvE2lX1LfFVsWSyNv7Q+d/71DWV7Lxvrwo/nO594ssf99lJcpgSFe3j9DVQuhizt/ZDu/P4XVLZDMTZUznkG8JqEOvfb8R0A4fiiTm7Xbn087dxvk91i3WIsATuVfav+etN/vKj/hPoCLs/2RJWpyIIAAAAASUVORK5CYII=" alt="QR أنا وأنت وبابا في المشمش">
+      </a>
+      <div class="card-hint">مسرحية مصري</div>
+    </div>
+    <div class="card" data-name="سيد درويش" data-type="فيلم" data-country="مصر">
+      <div class="card-num">21</div>
+      <div class="card-name">سيد درويش</div>
+      <div class="card-meta">فيلم · مصر</div>
+      <a href="pages/021.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB8ElEQVR4nO2Z22rDQAxEzxT//y9PHyRtbDeFPHlVKjUBOzvQQegy0sp8YF+fgAY1qB92gOLJCIMsq57rpCv7Lf7CAEIgC5BRpGmetGW/x18oPGNFWCEQltdJV/ab/JUmoEIrHbWN1x9AOUMLCbDUhFc/lB0xZYwiDx1hliet2T+KOlhtMDqjzqf10pX9Fn+d6pQAHH/nCtaV/RZUBFEUe1JYhKgQSNrFqy1KitolTHyEkG0EHv11RWWVXy1RUfjjLfRFY/YPo1QdMUOpnktbAOOvk6lqusJb5NfUEIlmfnyDMjgqGHaOREy9f4cSkmTloO2IugqvyccbShFTWl6qrsj0x3eoaIQl5S/LnIywzuwfRuXShuqKORDl0rBysiv7TftCefksvkoVpumPN0tXLcm6ZsjYgM2+8GZHSXitnFQtd5Q+m/i6oIQlbEQORMrfwkZP/EDZSvekZnU6MJYUzdk/iYr9vWxOUjUuihyO8+Tj2fzqivVq265locHuyn7jvJ2lPntkdcbcXXRlvyUfa23jnILq2pYlv9qy34OK/OO1mTZr0tZGXm1Rui5Wy2OSsr61Zr8Plf0w9FjdD2n2E7+gLFRSX6EuZj9xswNe94xrIxFRBsx+4mbn+22w8wIkZ+2Uq23Zb9VfD/3HQf0n1DesT/JNSQmJgwAAAABJRU5ErkJggg==" alt="QR سيد درويش">
+      </a>
+      <div class="card-hint">فيلم مصري</div>
+    </div>
+    <div class="card" data-name="الكبير أوي" data-type="مسلسل" data-country="مصر">
+      <div class="card-num">22</div>
+      <div class="card-name">الكبير أوي</div>
+      <div class="card-meta">مسلسل · مصر</div>
+      <a href="pages/022.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB8klEQVR4nO2asW4DMQxDH4v8/y+zgyTb12boFAmoNQSXM4EQgi1TVGT+EF9/AV3URf2KFyiejDDIsuq5Vqayb8kXBhAysoBK11oZy74nXygys/IU+0peK1PZN+Urw3kgASQfN8FU9q0oRw0DCbA0hNco1AuyTOV5lOX6XCtT2ffkKzeSLGOdq/VlKvvPo+TjUXi/EHtpKvsWVN6GgC1QvJCRQFIXr7EoCeTcTln1hWwj8NVfT5RZQjV2ViQvLsg4oIPZfxgVot7CsZWsEKxbtnLzdcRT02fSsHys3P5xx4tdt1AI1uqN9h6byr5Vf0Uf5DQpsHbTPZV9j56wjbNzNKJuRe79+A5lqWSXtA4iYYC5j9dI1PInVtGK/SXL4Rve8/gTZYwU5coCR6FXVrZ7Ho9IU5CtH0JYpFV4/cK3qEhPVCvjKP5Hzmaz/yTqRV2I7JEHlrexc+vXEQ9dGoZOqfsSEzdfv1AiJVieQ2RF4ffVX89wHMTVFhlsu+wdDPZU9j33Yz2yB7V1Myr8iqnsu+o9gF3ZSTcsk3n9rzOO+XaF7NU/Xn/iRzzn26lVM2OlXOey70blzrJUSiJM6m5eM1EOeyJ0Vw5Arj/xjHO+XbMhE44+VI80lX1Pvmq+TbXdrr6R+DPYWPat+utDv3hR/wn1DU5K7FGOsi8fAAAAAElFTkSuQmCC" alt="QR الكبير أوي">
+      </a>
+      <div class="card-hint">مسلسل مصري</div>
+    </div>
+    <div class="card" data-name="بيت الطين" data-type="مسلسل" data-country="الكويت">
+      <div class="card-num">23</div>
+      <div class="card-name">بيت الطين</div>
+      <div class="card-meta">مسلسل · الكويت</div>
+      <a href="pages/023.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB/klEQVR4nO2aUWsDMQyDP43+/7+sPcjJ5boV9nQxLG4pvUYwYRxbtifzB/v6C+igDuqHvUD5ZpBBlmWEl5Ou7Lf4CwMIGVnAcNc8act+j79QeYbyU5wmz5Ou7Df5a1hcNIJqqQRd2W9FGZDGh6UmvPqh7Cum6h46YVYnrdk/inoxy2Aqo9bT8dCV/RZ/rYrVgPNaM1hX9ltQCaKZs5QfZCSQtItXW5QEMma+hZBtBD76644yJVRHZMV5KZBGbs3+YZSqIspKylIE65CtwPHXYlOhVnq/vDa7Ip3+8Y6qVnF2jE4jlMt58v3NXlR/DVUjM6gQ1tV0d2W/R09YYCOZlMSqipz6+BvKQpXEXFMdIAOxkqyN2T+MGnfR4yENUQ0NR8rvyv55FE4LtDzgK/cbjN2V/Z776BKoVLMtVY10ZbHO7DegpqqX47hy1pjw9Gb/OCr61FgVYRJa5oUnvt5QtqzRB1kYrEiLDClas38WlX2HmSuhGt9bUa65o13Zb9ITnq21Fr+pfjr7x8V0TVdFxtEequya43dlv0t/jS+5giW/ajCNj/66o+xaA0W6qoQq178EdGb/LOq23xZpGWXPBeTZp31GRazWKGc68ejVDygrMSWwsgA584k3e8HSbqtmOI7+gjOfeLN1vz2lhEffWHK1Lfut+uuhv3hQ/wn1DfvkBjcTFn4zAAAAAElFTkSuQmCC" alt="QR بيت الطين">
+      </a>
+      <div class="card-hint">مسلسل كويتي</div>
+    </div>
+    <div class="card" data-name="عبدالحليم حافظ" data-type="فيلم" data-country="مصر">
+      <div class="card-num">24</div>
+      <div class="card-name">عبدالحليم حافظ</div>
+      <div class="card-meta">فيلم · مصر</div>
+      <a href="pages/024.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB+0lEQVR4nO2a3W5DIQyDP099/1f2LpxQuh9pVyXSSKeVHSzNsiAJ5sj8IT7+Arqoi/oWD1BGBhlkWUZ4m5nK/oheGEAIZAFyDXpmLPszeqFShiyrKJfVlpmp7A/pVZFdqCwqeasEU9kfRRmR/SjA0hBeo1APeG5Go+T7+r1mprI/o1ctJFnOAlvRf0xlf0SvvWM14Hy0zUxlfwSVRbRylvJARgJJp3iNRSn9g1k/Qsg2At/+6xUVpVZhRBEvBTL9xWD2b0bJVKZPM+E86LYV4Oq1hVaDSmnUqvUhEt3z4wsqVbBqoQHnIJTNefP9N5RUsggl78t9OuLux5d4VApbaSz7MHlsjaayP7MfY+VU77ASWgwwn+M1ElWmTTldqyqWadh7cir7M6ikLK0mwvleKX82+7ejVM2EkbLeSjO5PYrB7A+gRJ0VqzS6xCod7/raov3VZUUky9fS6idT2Z/r7yvLl8n6NO919foBJewyKOLby5XEfP2J13B3qwDGBrvUyyPsqewP+RNruC5qXefvtPxj2Z85D2Vko8rzdVvbZs9c9mfqY/s5yy1s/3C9EjCV/aF+oq82XEfvUuz5SsBU9gNQtrD0vB/SrY+/oJwuIn1XjLDrT3yJ/X47+1EYy+q0duvjHvv9dr8DJve5sXydseyP9l9v+o8X9Z9Qn3R47FWJUHy6AAAAAElFTkSuQmCC" alt="QR عبدالحليم حافظ">
+      </a>
+      <div class="card-hint">فيلم مصري</div>
+    </div>
+    <div class="card" data-name="ريا وسكينة" data-type="مسرحية" data-country="مصر">
+      <div class="card-num">25</div>
+      <div class="card-name">ريا وسكينة</div>
+      <div class="card-meta">مسرحية · مصر</div>
+      <a href="pages/025.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB+klEQVR4nO1ay27DMAwjh/7/L3MH0o9sO/QyS8NsFG1SEwhB2BIlh8Ib4+Md0EVd1LfxAugrUaBAiBDga8+0ZV+iFwQAhCgAylVuALAv+xq9QCsTmYSlXma6si9FkQBEgBTEsRvLefVFzYiVZfX7T/xzqBewaUNBoJjvOdOVfY1eY+OJYoI+LdSY6cr+PIpr361V5SRZyqsr6mXJotPjxv8IvP7rC4qOXJGJggRRkOSs2Zr9cRSXnZdsKdZuFNSb/VkUZyaMReU+GyHbsq+K9zNU5Uc2YMNZtGVfo9eqr9fHkjG1d1f2JSi6CLKfAFIYxV04CTRmfxg19+PWpBgmbMX9ruyr/ISw/NdQSU6N1088h2QTIcBXAKDI5XupK/sSlJILRYDWDUmZvP7rB9RofFmnePtELt38+BVFuYsTF5bsCNsJtw0bs69AcTSkAUDyLTnbOr3Zn0YJgpfRaEjLrosc7Z7G7CtQnH2wpVwCv81sa/anUUwvhxIYD+HCm6OmbMz+MOo1/ESSYyzFrLgd+buyL9FrnmLPpr3SDkvl3Zd9DUrStKmzYZGySPd8+zG2822K40QtTgwjD3RlX6SXxzxE0+xVAPd9gOfY9EJahFEqW5JXr33s59tZTrP7pTnXlX1VvU3Gsvo1E2GF/xvvH2M73z70xIv6T6hPSFb2PEf7+EQAAAAASUVORK5CYII=" alt="QR ريا وسكينة">
+      </a>
+      <div class="card-hint">مسرحية مصري</div>
+    </div>
+    <div class="card" data-name="جحا" data-type="شخصية تراثية" data-country="تراث عربي">
+      <div class="card-num">26</div>
+      <div class="card-name">جحا</div>
+      <div class="card-meta">شخصية تراثية · تراث عربي</div>
+      <a href="pages/026.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB70lEQVR4nO2Z3WpDMQyDP42+/ytrF7aTtN1gV7VhScshPRFUGMc/sswf1tdfQBd1UW/rAYqdEQZZVu3rZCr7FnthACFLFiBvSwGay77HXigsI8KtEGDkdTKVfZO99jIonEo+MsFU9q0oO0OWBFgawmsU6gEZpkC2It7nc51MZd9jr3QkWcY6T+vHVPYt9jrilAAcHx0nU9m3oMKJ1u1TvJCRQFIXr7EoCeIqmvgKIdsIfOuvZ5QxGbfyobiQuwwbzP7DKBmQFfFKOF6sshW49jpWtYqIbTQsHye3f9xr5UcrDFS9kdP1mnhNRWnJED5zZEgU5GMs+556woANssNCeSu5+fEnVIb47BfrIqbDuY/XSFRpXS9ZMUXDCvlT2Xeh7PIvxa8s8+vVbPafRJUoKMuHslpS4dUL31FhKKGqJlzBf9lsMPsOlImuSArjCR164a0n3lEx6jDOCG/V9uoTTyvmHc5p2pbvrerDffuhY2XJUBVqTSHDYhCeNpZ9kz6xtmtQW5kx0uZY9p9HscZmNnakx2rB80raU9n3xK+aYu8x0eofrz7xsp7m2yuEhcVWozSWfTvKDq11C2Ho1qu/oCy0+iM5y9h+XpNQ53yblSDDy4CrT7ysc74dOoUjjkXnnX34VPat9deH/vGi/hPqG2gz8kki1uFcAAAAAElFTkSuQmCC" alt="QR جحا">
+      </a>
+      <div class="card-hint">شخصية تراثية عربي  /حكايا</div>
+    </div>
+    <div class="card" data-name="قيامة أرطغرل" data-type="مسلسل" data-country="تركيا/مدبلج">
+      <div class="card-num">27</div>
+      <div class="card-name">قيامة أرطغرل</div>
+      <div class="card-meta">مسلسل · تركيا/مدبلج</div>
+      <a href="pages/027.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB80lEQVR4nO2a3a7cIBCD/VX7/q/sXsxP2HZbnYsK5qgQaUOCpVgjMJ5hsb7QfnwFdFEX9Vt7SUTPQvLy4GdkKvsj8ZKljJqRZGFscI9MZX8mXiJjJmXIqKccmcr+LCpmk+GvqH/5xe+NisWoDzvmd2C/B/WSKkKU4luYeOlTvKai5JpO/nAVZCr7/Si89kkPEXbiJK/BKCQEikuOKWeg98nB7PejLAmHYoWbQOG9kOJnMPvNKNn2omJq3Yq75atf7yiwhJ3hIcJnSXbq22D2+1HufCgWJBJIMtSiHMx+PyoSIHdWZGQ5nnL7HMx+M0p2SFSswRatx5XJV79+QZGOnppRUZxwi/9o9ttRlnArFp0dlZrNZr8XFStxnUy5PbaZuPnQWysfIZfZSk/mZ/DGa0WFlzd21lfdiREZssHsj6DASEDGqjKjW4/+gDKSsbDd1QnhTiZHs9+PiiIEVtQpjBClatz6/VujYxI30oSFvSiLP5X9IT+htg5aXWo83vrE2pb6KiVlKj3rqTeV/X7Ucr5tlpQ7z9YyYlPZH4lXqVdOKZlUsXSx3P8DLO3RL6/3Pkq7+dCfUKSzJ4JIRJLr79f2erpVInzqrDHh7npc2nK+nR0LmTRfqWJT2R/xE7U/Utliv2pbMZX9Uf+16YsX9T+hfgKORS7S+afDSQAAAABJRU5ErkJggg==" alt="QR قيامة أرطغرل">
+      </a>
+      <div class="card-hint">مسلسل تركي مدبلج</div>
+    </div>
+    <div class="card" data-name="حرملك" data-type="مسلسل" data-country="سوريا">
+      <div class="card-num">28</div>
+      <div class="card-name">حرملك</div>
+      <div class="card-meta">مسلسل · سوريا</div>
+      <a href="pages/028.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB+0lEQVR4nO2aS44jMQxDHwe5/5U5C0qOO9OLXpXVGCu/qphACEGiZDkyP7A/PwFd1EX9Yy9QrowwyLIM8rYylf0Rf2EAISMLcmHeK2PZH0JJAhAJMaRcr5XR7B9FvbZrV0ICqCLsFK9fgDJ2BRVgaQiveSi7JSx63+9rZTT7R1EvVhlMZdS+2jdT2R/x12fH6jy0rUxlfwSVIIpmUVmZpkJdIAezP4CSQMaspxBy5N+3//qKcjno3YYpCSnAyKPZP4xSxVCHUupita2BXH/tZtezkrFe/Z1t7KnsD+UjJPHS4GPT+6Gr99+gSrpM0rH2RDWvuPn41VztVgXWykPyntycyv5MPsrqbXYNcwBw6/5o9g+jaizodRPZytBQnZNT2Z/p741VChbn5XNJ/mj2D6PSeJXGi95wd9RV6E1lf07vgfo0rq6LVQOmsj83z3GNCYGE2Xuwc/uJD5QzTTWWq2e1MmzNkGI0+wOoeKdOg6L2ljpXr97v5veesW9Lv2qdq1+bdZsK6/zRa2qx5vhT2R/R+x7bON7JmQfQ/evV+8228+2YomDuonmI11TUC9aGSGnq3R7rznUu+0P+WtYVUtha5x/3/ybfo1zTQYElb1XzN7B/BvWC9znjmkhYNWq984kP28+3q0Z2V5ETSd/6uNvWfz30ixf1P6H+AsodECREHSFdAAAAAElFTkSuQmCC" alt="QR حرملك">
+      </a>
+      <div class="card-hint">مسلسل سوري</div>
+    </div>
+    <div class="card" data-name="ضيعة ضايعة" data-type="مسلسل" data-country="سوريا">
+      <div class="card-num">29</div>
+      <div class="card-name">ضيعة ضايعة</div>
+      <div class="card-meta">مسلسل · سوريا</div>
+      <a href="pages/029.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB7UlEQVR4nO2Z22qDMQyDP42+/ytrF3IO3QF61XgsLoTkj6FCxI5iy7xgH684Xa/r9c0eoMwMMsiyxnzsdEV/hC8MIGRkQSZm7bRFf4YvVMyAcNbCdcJ8BFdXr8e+mIG4U3gG1x/wMkKCDJaa4Grl9YAVjEbJ9zXOna7oz/BVB0mWsfbdseiK/ghfW54SgPPbM1hX9Ee8cogEOJejIMEpkHQKV1svCeQ6Ta7Ej2wj8NVfz14ugmAMSkAm4cut0b/ZSx5SS0lZqjn7Q6kr+iN8UayVTh2szW+678dlU9/X43FciyFsnLGu6M+cr5ypYqzO24hT3Xj86iU7UiJ0iXErcu/Hn7yscFQ6rAIxBbESGY3Rv9krcVe0rIyVouFM+V3Rv98L25FgWdQ4qoXZc1f0R/ga5BgXYcUiNVy+lpWeSFRWCC5JphL4XdEfej8msc9KjoS2euHVE7slHtdbuzLWiEjgxuNmiUePbtoalY+5KLuiP6QnZix6e0hWpdW6/cfN5H066JpVi/Ru26I/k7/WpDLXTGcJyZu/lm397aXyPd+Ptz7xxZ7721NxeTYgfQbXn/ASNo72mv0h3frEL16uar3AqgbIrU88297fpupfxqtyeOsTT7b3t6nXYgrTWUdQdEV/VH+96R+v13/y+gSrQwEsZeL/egAAAABJRU5ErkJggg==" alt="QR ضيعة ضايعة">
+      </a>
+      <div class="card-hint">مسلسل سوري</div>
+    </div>
+    <div class="card" data-name="ولاد رزق" data-type="فيلم" data-country="مصر">
+      <div class="card-num">30</div>
+      <div class="card-name">ولاد رزق</div>
+      <div class="card-meta">فيلم · مصر</div>
+      <a href="pages/030.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB/0lEQVR4nO2azY7jMAyDPy7y/q/MPVBKMukMMKdYi7XTg1sTKCHoz1RkfrH+/Aa0URv1sQ5QdkYYZFm975Op7JfYCwMIgSxARgnTOhnLfhFKEhCPMqAY7zoZzf5V1HHbKyaLU8m3SjCV/VKU7XYqwNIQXqNQB1SaAtlKvkeOm3kVr6mog7MMyjK+vEruk7Hsl9jr2bE6j24nU9kvQcWJkrOoxiLepS6Qg9m/j7IECUWTjxCyjWLEwewXoGwq/OJZKAEpIK3rZPbvolRNqirRpy5W2xrIttcTFXNVJCJdNrO94/EDJbkCD5P4rPvQzvffoYyUELTcd6LSKHY8PlHxK1s6I7Jai10fv0O5qiIRJu5iTnnYZPYvo+rSU0LXWSdLNOyYnMp+jX8ZS1UVO9+jK+WPZv8yCrtt1E9+PQ1n21PZr0FdWn1KY4Sw6iq8/euJuitduOToSy/c/cQHSmkmODO8hbPd/eqX1fp9GaebidyP3IVyKvs1+b6qIuBoFbY78ecSOZX9Gn2it1yDWp/DIu3+675u8213q3+KO9Epdr5/oBJ/nAPIklm5XgmYzP5d1AFtp6jQUcN8DiC9htdU1PHlW9VGC7tFCu33TX5AuWZDAkdC7Db2X2D/Duo+346VhHHp02x94rHu8+2+P+oaFqVdHct+af/10j9u1P+E+gumBPk6CeqM5QAAAABJRU5ErkJggg==" alt="QR ولاد رزق">
+      </a>
+      <div class="card-hint">فيلم مصري</div>
+    </div>
+    <div class="card" data-name="صح النوم" data-type="مسرحية" data-country="مصر">
+      <div class="card-num">31</div>
+      <div class="card-name">صح النوم</div>
+      <div class="card-meta">مسرحية · مصر</div>
+      <a href="pages/031.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB+klEQVR4nO2Z224CMQxEz1T8/y9PH2xns7SVeMJGjUGwIiMxsnwZOzIv2NcroIM6qB/2AMWTQQZZlhHeTqayb/EXBhDCsgAZRZrmyVj2Pf5C6RkirBDhvHUylX2Tvy7LpNxd2MNrKmrzl5GzbBnisY3XVNQDrmS0LFkWcoSZu3hNRT1YbTA6o9aRXCdj2bf4a6tTAnC89go2lX0LKoJIgKM5CiK6BJK6eE1FWQJFRIHBCCHbCHz01xPK0Q5BEVkoElJE05zN/r2oEKWOd6nUS7YCHH9t9rjJLYe0xwI5JZjO/HhDGcm4RsfIT2V4nXp/t5WPGVw5YseKgvwYy75HTxhhGxnvGcnpj7+hssQrfHNb5tQMOZj9m1Hb0gblyA3k0jD3hmPZN/XHlKo1/2ROVqSd/rhZDtXXEnp5biv3Y9k37r+EnB7LFhmTpE98PaMMskOAIVDs8muZc/TEZhFf3mafnI5sFF47/tqs9qteyrUEK445yScfN7tVeSLSlscgB8up7Hv0Vz3m/aOra+btbQuvqajtftsqHab1nR9T2ffUr7pwhFxWeM2P+fNU9k31fl1tLMVlSlC4h9dHoIQdakLX/ZDOfuIPlLFq/paMqbj7BPbvQe3327WRdjTKtbOYy77HX3W/TcrWVBXXHD6Wfav+etM/HtR/Qn0DoBvrZRFXJPUAAAAASUVORK5CYII=" alt="QR صح النوم">
+      </a>
+      <div class="card-hint">مسرحية مصري</div>
+    </div>
+    <div class="card" data-name="شفيقة ومتولي" data-type="فيلم" data-country="مصر">
+      <div class="card-num">32</div>
+      <div class="card-name">شفيقة ومتولي</div>
+      <div class="card-meta">فيلم · مصر</div>
+      <a href="pages/032.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB/klEQVR4nO2asW4DMQxDH4v7/19mB0m20y5ZaiuovVxyJhCCkGRKjswb6+sd0EVd1K/1gOKThWWEhQF57LRlf0QvDCBCn1DMsudOW/Zn9EKpjEGO4CKDLHa6sj+KkgALFKKpCa++KJVEFXB//osfh3pgamNkIwsjLztd2Z/Rq6LKigI2P9VOV/b7UZp5F1ElyEPyKK+uqCckS530+gUiR9uy34/CtjGYetYrY0cRc1f2R1DTzhs7LMXMRuPW7DejRlEvlbTuppBt2R9BRfZV/SLzMpJRwrcfWtaTz+oUw4PJssCy5Btfrygp8lA4D0Yx3EW8asx+M0oVWJ4vyoTNut+V/SGUTEWWhkphKSLYWrPfisr4MjH2yvPROQOrktaV/SmUkZzT1aX2R57eer+smEdbMZogQs1y9Y++88LfKMeMEIGcpyNpJ7j1a10xv68uW5R1tYSdJ2Vb9kf0Cp81+qA5jNYY93RlfyofRRrTbIlQdN5xajZnvxX1MJPQOatQKJjH461f63qdrypdV1h8j2dX9qf8BFTnk0U/5jzRG13/9QNl2wbHBa3Xu+5Mz87s96KW++06I133kKLytSv7c/MvyP+ZTKNP3RX1ZX8WVTEmIaXBCM0+gf0e1Hq/reyvx4hi7HVlfwYlSeHl7dKsRNSt9y9r8V+bfvGi/hPqG7fE9UhXtiLjAAAAAElFTkSuQmCC" alt="QR شفيقة ومتولي">
+      </a>
+      <div class="card-hint">فيلم مصري</div>
+    </div>
+    <div class="card" data-name="المشبوه" data-type="فيلم" data-country="مصر">
+      <div class="card-num">33</div>
+      <div class="card-name">المشبوه</div>
+      <div class="card-meta">فيلم · مصر</div>
+      <a href="pages/033.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB+ElEQVR4nO2a20qEMQyEZ+R//1f+vJj04Krg1TZguyBdO+AQ0mQy1egP6+MvoIu6qG/rkZwdspCM8diPk67sj8RLSJJlZCxphGuetGV/CGVbkqyKky1ZXiet2b8V9Wx7LCGPpNo6QVf2R1EIKqkkYTfh1Qr1SDOTjLExljHbSVf2Z+JViZTOuLLKjJO27I/Ea1esSCKfvYJ1ZX8ElSSyIsGqMcqkTdqneHVFYUumsomEzTIp/1z99YKCRKVSzQleGmT0RWf270UZyWLW9vTFkq2B3Hht69ESqONqJtsMFbY7P671DFlP5sch7F1C34d4NUelDRqn7pvpV9z7+IoyIEjpKkmR+n/7408ovMmueREVA4xzvFqiqjEyv1CFn1HOOMKrMQqEXE4Xjh5TJZ2uX/hljSaYWzgHbsYvdfPrFZWMKiMaIUAyW8wasz+A8nrqqBlb3vzCqyf2BRmxRfaU0QrxdiSgK/szfqE0AqY5HWElkObOQ/taaaTKLAEMeydp15X9of5YW6U7ojVHlo/flf0ZfyI7mHJiuPiuybst+zP1a/k5ebOd/uH8l4Cu7A/V++nhuO5iIjaUa1/2h1FjIsJe70O+evUXFPW0bWkYYdefeFn7+3YcMIs0yiprtz/ua3/fzs/ydMrnSU3ryv6o/nrTX7yo/4T6BOAb80zi0EupAAAAAElFTkSuQmCC" alt="QR المشبوه">
+      </a>
+      <div class="card-hint">فيلم مصري</div>
+    </div>
+    <div class="card" data-name="قضية رأي عام" data-type="فيلم" data-country="مصر">
+      <div class="card-num">34</div>
+      <div class="card-name">قضية رأي عام</div>
+      <div class="card-meta">فيلم · مصر</div>
+      <a href="pages/034.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB6klEQVR4nO2ZzW7DMAyD+Q17/1fmDpIcp82hl9kaZhdofkwghCAzNIP1wfj6BHRQB/U2viXizBLyuEC+Zrqy31IvWcqqGUkWRgaPma7s99RLRM2uko1Gy5mu7DejLAlDnXfh1RWF7JdK/fIT/xzqW6oKYUkyQ8DGTFv261FytZMffgXpyn49Cs/npfNhJ3byaoxCQiDyBRktZ6AMWGf2e1DYk5tA4b2Q4q85+4UoOQTMKnH37Wj56Nc0wt/j1DHHmUPXLOJ+V/b71mOqF0ZIIMlQi7I5+7UoiJZyvhNNXMjj9dmY/WIUVRQsnBtHc2UTyH3Z70IhrIgkSDPh3Bsd/XpDWY5dto1K+bNu0Wed2a9FyZbtu6twedbor+MnXlCgWIDUbtIlbD79dRup9SVclRxWSnHyiWeUY7NISpY1xTknj35DZVsN38W1Fjl+9QVF+S+F3UKI1PvMdRqzX4zC0+cOp5SJWI2Uxe/KfpefmPKJyaXG5ckn5jHlq2Q8Ea2VjuL4+/uYvm970v0o46hYV/a78i8p8xxH0prOy5VRdGW/Sb8UqX1GhnVUHY5+PaJyXcbGWyYqic96fEZFTljrkPRlPv5+HtP37RwZGob5yup1Zb/FT4wktXaL49awFV3Zb/Vfi554UP8J9QMoQRAG6x5F7QAAAABJRU5ErkJggg==" alt="QR قضية رأي عام">
+      </a>
+      <div class="card-hint">فيلم مصري</div>
+    </div>
+    <div class="card" data-name="رد قلبي" data-type="فيلم" data-country="مصر">
+      <div class="card-num">35</div>
+      <div class="card-name">رد قلبي</div>
+      <div class="card-meta">فيلم · مصر</div>
+      <a href="pages/035.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB+UlEQVR4nO2a22oDMQxEz5T8/y9PH3RZL20hT2uFWiyJgwcyCEsaySvzhn29Azqog/phL1CsDDLIsozwsjOV/RZ/YQAhkAXIuaidsez3+AulZ4hjheJx70xlv8lfac6AhNWFe3h9AMqAVB+WhvAahXrBFYzGkmUhxzHzLl5TUS+6DEZlvE6VXDtj2T+PkpelMoXFzyWBTWW/BRWHSICjMgridAkk7eI1EhWioY+VqkZmfRRYR6/eUW59mh8yzgIZ/pvM/llUJHWLSF5EXWzZCnD8tVjpiep/lDEIstNtJx5vKKMIQBQOsqslOvn+d5QlmcxW2RO5FMWJxztKNjhEvdaIpHLbZPbPoyxdsqsUBTEQS806mP3DqGx6Wn1l2sqhYcXkVPZ7zlekLLXOd7itU/5o9g+jqqm+Zl81WFXlry28pqJe6aruGVOxxlq5O5X9Fn+1tu+Uj+VrsHP0xGqRvfIxNjgWIcjA9lT2m/ohWp2WmIhZmKtQTmW/sd9Oa1Vfk1br3D8udpuv9txLVRlzjj+V/aZ8D9QUzNe1benXk+8XW+63UX655jv9SsBU9pvyfV3O1oVHeux6JWAq+80o5WTaEjXBR6cf+gNV2UrgGCFWI/4J7J9Brffb9JTQcsmK0z/ebL3fbinh6rVTro5lv1V/PfSPB/WfUN+6QelczeUNPAAAAABJRU5ErkJggg==" alt="QR رد قلبي">
+      </a>
+      <div class="card-hint">فيلم مصري</div>
+    </div>
+    <div class="card" data-name="الناصر صلاح الدين" data-type="فيلم" data-country="مصر">
+      <div class="card-num">36</div>
+      <div class="card-name">الناصر صلاح الدين</div>
+      <div class="card-meta">فيلم · مصر</div>
+      <a href="pages/036.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB80lEQVR4nO2awY7kMAhEX436/3+59gA43p4eaU6G1dotpWOnpJQQ4AJH5hfj6zegi7qob+MFijsj8Dbx82Qq+xZ7YUirWYCRZUteT6ay77EXSptBmkzldflkKvtelNO3lJMpvKai5LTZsTf+e6gXlIVkACucrHJZE6+pKFzu5A+/gkxlfx4lv91n8tJfYTmVfQtKICSEJHC4nCWVAJvMvgclW7jUhAjtJYjLcPYHUTgS2H6JSIx/45u/3lAOo6R55FwBO/PbZPbnUSIyF4AVU8BSBeVk9sdRKqGa6d3COCqh3D4Hsz+MwhmNQCastUXmkm/+ekPJyLZVHhXNCa/kP5r9cZSjAErf0lYdOSXYZPYtKOOUp2E5bEmW5dv/2oe8pfnwriiFVBn/9lf3Ef4TLdW4xKrYpmPZt6AM2b1Jb3sqo9uP/oiyVwGZ3gbyKiaHsz+KWudD67zDsqp3WJ43lX1Tvq+wc+6IJS9UEn8q+xZ9//QhQs0/LQpS/l99v8bWX10ORuqKCMceXlNR2/m2xUpcGaJlsansW+xVqkFZFlmlvFw9iqnsu+pt5XcAq0Whaorp9r9+QlXrXrEJKHYC+cbjZ9Sj6EPeK2Py6q9tbOfbeefQqHleFGtT2XfV2/DsiTwffi1ZMZV9q/469MaL+p9QfwBq2wgbPOwLQgAAAABJRU5ErkJggg==" alt="QR الناصر صلاح الدين">
+      </a>
+      <div class="card-hint">فيلم مصري</div>
+    </div>
+    <div class="card" data-name="دعاء الكروان" data-type="فيلم" data-country="مصر">
+      <div class="card-num">37</div>
+      <div class="card-name">دعاء الكروان</div>
+      <div class="card-meta">فيلم · مصر</div>
+      <a href="pages/037.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB8UlEQVR4nO2ZUWsDMQyD9Y3+/7+sPdjOZbcV+nQ2LGkPwlVQIRxbdrA+WF+fgA7qoH6tl0TsLGQJY2pfv0xl36KXLEkIg5GEL6UkMZd9j14ilEERVqkWXr9MZd+k17YsKqi2SjCVfSvKFVogyTCE1yjUS1qRhCOFGeEIM3fxmop6aZXBqIxXVF1pfyz7Fr3ujtXx2TPYVPYtqKyGksJNxAsskIAuXlNRBgnLyIovQtgWIeJg9g0oW2lUI7JEHEhU/mIy+2dRZAxVbo+6uNtWHb1uKC+JrEhZ1wv7nMcbyoAzdcXj7I108v0bFCDCgsWQYs0rznm8o8iYMnaeyLQWpz7+hXL6LSQQ1XHHAMx9vEaitqHNXhVzaFhncir7Ln9vBGukmvVypfzR7B9GlXWoIfTluaj81cJrMipbR+Qoj7YlvGk2mf3jqGwdbTK+QGzzwuMntoXF6oYq62eNTDNx9LqjovFJ7xXZ3hCm7Pivn8vOghiPs2l0DQst2VPZN9XHtSXPH1UZc44/lX1TfNXGzhArg+88qlPZP4/a7rdrPoG9+secgU1l36PXut92nsdU7KqZU9k3o7Bsh/da90Oc+vgG5bwbQnKOEM984rb2++1QCVnG7DOLqex79Kr77WUlXH1j9uFj2bf6r4f+8aD+E+obn2H+OJu287MAAAAASUVORK5CYII=" alt="QR دعاء الكروان">
+      </a>
+      <div class="card-hint">فيلم مصري</div>
+    </div>
+    <div class="card" data-name="الأرض" data-type="فيلم" data-country="مصر">
+      <div class="card-num">38</div>
+      <div class="card-name">الأرض</div>
+      <div class="card-meta">فيلم · مصر</div>
+      <a href="pages/038.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB70lEQVR4nO1a0W7EMAizp/7/L3sPGJredNK9LGEaTLtljaWzEBBDSuED+/oENKhB/TRpXdQ/z52u7PejLthJBKD8FAFQtdOV/SEUyXpgFzm2vNOa/TkUI7YI3JnZgVdXlAi9eOqXv/HPoS4gPUQBlBxkEGunLfsz/qriRTF/RSw7XdnvR1HrmnFCQnfFP8SrMYoAQSJ+ICsxkhNf71BUJGAIL1p7VU42Z78RBT10PQCrVP8VNPr+iaK7H4VzKEDKjijqW2P2+1ESVKUqViQAkZmUjdnvR5FkZGT4TISgeOTjszH7zaisXwplX0VrGVRo6tdPVCh6MSJKZPjMxb87+70oSYwkBKLeA+k3zHziaVIcjQI8JvQzVH5OPt52ufkhRCH7IbfcjLrfl/2Z/jEEGH1CxtpTiplPvEExukhLMWEZ58w8+gUlh9UtJ4jKRY5eXe1KlVqft6oIda+Jr8Wifjnx5BmYL4hiPE31ZX+mH5Ji9hVqS3VZRMdba/abUct81b5xaGk5OtuyP1i/oNs9KfLLY13ZH+uHwlnMwb2vO6LZnnx8RcUtdg5WYd+BHuo3Z38K5VpPeoQYMx5q8nGx616qXjkRSuZDoNqyP+Sv+4zU0n7nuwETX4vVRKLOxHytKZ+NXl1tvd/e842D+k+ob40G/xcGJw1tAAAAAElFTkSuQmCC" alt="QR الأرض">
+      </a>
+      <div class="card-hint">فيلم مصري</div>
+    </div>
+    <div class="card" data-name="الكرنك" data-type="فيلم" data-country="مصر">
+      <div class="card-num">39</div>
+      <div class="card-name">الكرنك</div>
+      <div class="card-meta">فيلم · مصر</div>
+      <a href="pages/039.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB90lEQVR4nO2ZUW8DIQyD/U39/3/Ze0gCdOu0PkEqkZPuaM/SWREEx2C9EV/vgC7qon7FQyJGlpDrB5Lnm67sj+RLliRGuiyMJDzedGV/CAVImbdMkaOu5ZvW7I+hcMwttn3xw1EI5wzb9MWPQz2kylDkymQBy1p2iFdXVBUqyS+ugnRlvx+Ff4yz8vO0LLuyP4JCQqC45JhyBkqAdWZ/BoVTciEJUnshxa05+40oOWZTDCWNuhVPy7d+PaOIcuUoWsaSM1nO+taY/QHUXHvCCAkkGepFZ/b7UYDkKlqhwKLhru2zM/u9KCopONclkpneBHJf9qdQCGNDJs8QsiKLf2/2u1GWcXWOZnZHckqwzuz3oh41iHaRlGBhFhpjuH7hEiW6tDztISji3pX9of4x7Ii45b/pUlx/4gWK2BaxUXSN1mLnXD/6B8qy8dwOrdgnq5nszX47imyrs+AbIaqrDF+nMfvNKKaIL73q8ilCq3L16hq1E2oxKaa1Kvv6E2ss/uoQXMqOaCzHtuyP6NXqFCNVMckijSNjXdmf0fepGkpAhMjPBRoFrCv7Q6g4xU5LOrdFlFrs6ok/UMgijrdtmdgJ8F2PSzzm0OMMzelMpHi963HGcr6dkaZhZC+rWFf2x/wJ5blj+hF6/u/qrxH4f0xf9hfVHfUNE3gREhRKLfQAAAAASUVORK5CYII=" alt="QR الكرنك">
+      </a>
+      <div class="card-hint">فيلم مصري</div>
+    </div>
+    <div class="card" data-name="ليالي الحلمية" data-type="مسلسل" data-country="مصر">
+      <div class="card-num">40</div>
+      <div class="card-name">ليالي الحلمية</div>
+      <div class="card-meta">مسلسل · مصر</div>
+      <a href="pages/040.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB/UlEQVR4nO2azW4EIQyDP1f7/q/sHpIAs22lPUGkwmHELJbWivLjhJH5YH19Arqoi/qxXqDYGWGQZdW+TrqyP2IvDCBkyQJkFGGaJ23Zn7EXCsuIcCs0bJYnXdkfsleuNFE4lbxUgq7sj6IMlgCJ2nbg1Qr1gkxTICvzfT7HSVf2Z+yVjhSVUetpvXRlvx8lL1uB9ZuA7cr+CCqcSICjOCreJRGPzuw3o0I0WJmpSkZ4Sgzr6tUHSjZ4FEaEjLNAhv0as9+MSv9CFjN/DdkKcO31RMlWGsdEyho2s+3bDy3rlSGXVdGjN8oeUod4dUaFT4mRupDHvOLG4ztKtrAj8UdEZv537Rqz348KSR/NkJ7DnJIZjdlvRsnMPnFmrBwaVkx2ZX8GZSxJGkl/yPzUY63Z70UNl3oOoWtUeOeFbyvnhUY1vs+OW/FTqI2u7I/YSyEdKvain/Qc7Fw98YaaiV3OTSgMYe584rHiviP0vbMsEurCYbg7n1hXzldnax2eFZuoA0d4dUU95qtLXGZlTH/ryn4/inFtZmOD070AZ0jaXdmfice6xY4ctswPxycBXdmfyvfTZjIui5Vy7cv+mF4FKpc55xU1pND93uQPlEVOwbCGxjjPqxNqvd+OayKlDqsQvfVxXev9NiX1Xb12Cdiu7I/qr03/eFH/CfUN75TuWjotGxcAAAAASUVORK5CYII=" alt="QR ليالي الحلمية">
+      </a>
+      <div class="card-hint">مسلسل مصري</div>
+    </div>
+    <div class="card" data-name="الوسية" data-type="مسلسل" data-country="السعودية">
+      <div class="card-num">41</div>
+      <div class="card-name">الوسية</div>
+      <div class="card-meta">مسلسل · السعودية</div>
+      <a href="pages/041.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB7UlEQVR4nO2awY4jMQhEX43y/79cewBsOqOVcopZrYmU6dglTQlhKHDLfGA/n4Au6qJ+2QsUTwYZZFlGuO1MZX/EXxhAyJYFyCiOae6MZX/GXyg9Q4QVAmF57Uxlf8hfZapD2V14htc/gCo/IQGWhvAahXrBPowm831+r52p7M/4KwMpKqP6bv2Yyv6Iv94Vq9vnGK/BqAiiyFmAYkFIIr4ms/8yKkSDlbGU0kvO+iiwrl59oGRHaO3IMs4CGf4bzP7LqB1fIv5EWGVwAVx/NUt1GmWxfIfjXKbb7nncFv2QqZZxJa5c0CFeU1EvVnTFg8l8b2URuOexm0Nm2YCxjV2ra3Eq+yMo74NnPYc5JTMGs/8yqg1toDvukfKnsj81z9ldowyOAdhK+bc+btvx9Wi3a/XOC9+sZjg8+h9SUCgF/lT2R85jSlSEq+O2vI/o1RNvKGNn6yhH623FmrnziYdFvlcprd4ghQTTnU90S8mgqpGlIJbot+79YzO5P9bcS25F8wivqah2v51pSzu2Sn6NZX8mf9VFWhbINT/crwRMZX9qnhM+M3GRVh6rmdhc9mdRgniFwtIahKH7/sRfUJG6UuQr5zwDeE1C9ftt1kQiogy484k36/fbYPe+kZKrY9kf1V9f+o8X9T+h/gCsh/dJq5myOwAAAABJRU5ErkJggg==" alt="QR الوسية">
+      </a>
+      <div class="card-hint">مسلسل سعودي</div>
+    </div>
+    <div class="card" data-name="سيلفي" data-type="مسلسل" data-country="السعودية">
+      <div class="card-num">42</div>
+      <div class="card-name">سيلفي</div>
+      <div class="card-meta">مسلسل · السعودية</div>
+      <a href="pages/042.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB+ElEQVR4nO2awW7DMAxDH4f8/y9zB0m20/XQy2INsw5xEhMoIdgWxVTmg/j6BHRQB/UjLlDcGWSQZRnhZaYr+y35wgBCIAuodI2Ztuz35AtlZsg8xbqSx0xX9pvytYRRLCp5qQRd2W9F2RgBEmCpCa9WqAvmZrTyvM/rmOnKfk++ciFFZdQ6Ww9d2T+Pkpdb+fbid37xz6OyGkIcX4oXQhJx6cz+eZQlJBNb0ZE2IdsIfPTXHSWbTFatLOMskKEvGrN/GBWiNEWqhRX3U7Zy8rXEBSLKolUHGCEsnGk7/eOMK7eciSw5OyCl0NcmXp1RQpIQ2JE65alfTXdn9s+iogtyDdg4B7ABY3dlv0lPeMqusRHDEMuGqDH7h1GLabNWxTQNa092Zb/Lz/HoFFeZX0f+qY8z5ExRmdHxulbd8Qtf4pq6i1SraRhGVxRqoyv7XfUxxiqUzAFsn/r4gorOumQq0U7mu+NPvEGJan6i+0aWSpsdf2KJXFBi2Dkjb3H0W+f74xI3f3VsR1VlDM+1LftN/gQANrJszbVV8qst+z16tb5iK4fhH46/BHRlv0nfpyq16jSLjJU/3Zf9XlSURgtLwwhDpz4usf4fwLMzGs708SfusX7fni6FNeTY6R9vsX7fJrvFcPPjOQRFV/Zb9ddDv3hQ/wn1Ddr6+EQYUE8lAAAAAElFTkSuQmCC" alt="QR سيلفي">
+      </a>
+      <div class="card-hint">مسلسل سعودي</div>
+    </div>
+    <div class="card" data-name="أبو جانتي" data-type="مسلسل" data-country="السعودية">
+      <div class="card-num">43</div>
+      <div class="card-name">أبو جانتي</div>
+      <div class="card-meta">مسلسل · السعودية</div>
+      <a href="pages/043.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB/UlEQVR4nO2azYrEMAyDPy15/1fWHmyn6f7AXLbxsPGhdIhghLEdRanMC/HxCuigDupbDFC8WWCQZRnha6Ut+y35wgDCciRIIIxcK23Zb0JJIioLg80srljpzX4XykKGyF1WXQdebVGeOdKcXX/7j++HGlClJIzAMbuE50pb9nvyVaVkGcckI5610pX9lnxVE9aMj7paqqsv+y0oIXLMG1nCygGmXG3M/mHUINovm88zTY6FkBhd2e/SX4CEjWLgL6146usnlGxAsqeqMELCOvW1xAArTkLO0soSq0Okdc6PN1Scgww4ysxcGiM2g8bsn0eVWiXrK2c9wuFVtGb/MKr2QUrSKyZXpMwpXbuy34VSyC+ktSONUpf1Zv80SoBdsl4IWeVR+PTjF5SMkVJMlJOjfBz9dQvVZpjualoUaUznIGvLfhPK6T4bKxowd0vZR0/cYgApVX1ZhJ6WoY5evcWYtZT7Ym6LAEaZxK7st+qv0F3lFV6H7lNfS4xpdEXvhR2dZ8nYB7bw6oqS19f0VzV1RS53Zf88KrZDIKtq/pjOjrG7st+zP9b9dlZYmqopXE8/3mLA/XY2vfspYzfxegeULF3+aryc7wF+RclyXT9a6Xz5nIdusdxvO6+2p0ENZex3Zb8nX5UaTJSYr4+/fPTqLRb99dA/HtR/Qn0CNhrlWSL4bGkAAAAASUVORK5CYII=" alt="QR أبو جانتي">
+      </a>
+      <div class="card-hint">مسلسل سعودي</div>
+    </div>
+    <div class="card" data-name="العاصوف" data-type="مسلسل" data-country="السعودية">
+      <div class="card-num">44</div>
+      <div class="card-name">العاصوف</div>
+      <div class="card-meta">مسلسل · السعودية</div>
+      <a href="pages/044.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB80lEQVR4nO2awYrDQAxDpSX//8tvD7Ynk5aFnmrDjgltIIIK4Xhku0YfxM8noIM6qLe4JMcdlpCMMbK4n4xl36KXkCRLyJRkWNuTqex79AqtJEtGwsaK+3wylX0rCkV2CYQyuQbwmooyxrYky6KqVzuvUahLqkyKkpVCpVx08ZqKurSOQWMJq6qX15Ox7L+P8u5XLZxH4tPGTmXf47+qVBGVKyp/iBY5N5Z9i15YhD0lLy0jIYvjv/YAIZBQGYlKsHUQMJV9D8qSwbdGy9w7hZzM/vsoME7HZSldfmYX533cw+xnZDWRJs1FZt1U9k35ZSmM/Va3TMjVyGsoKtwp5SqMHFmVeXfexycKYzkKl7JwuXTTqffvqJRJ0Q6l6aIGFn28BqIE5Ick8kjMozGv479eUDhEqpG0cSqXDmM0+6+iyjzgZSR0Owyno5jKvmn+pWy6Xc03+XXm0a+RepGefjkukwujM594R2HHomN1QXky4uPvn5GrxrWDpGaFlWmnfj3i0toFWVH2s+DnSMw9vKai0nIpfNY29aIWbHD81x37fnvZiKr7MaA+/dAW+35bKqlWo52Tiqnse1FeLdDquzn+/k8U9R8K3Yqd+ddLbPvtzdbX0qgEm8q+R6+y9JFh2ODlJejhNRX12G9/5RcP6j+hfgGUZwMuZBS0YgAAAABJRU5ErkJggg==" alt="QR العاصوف">
+      </a>
+      <div class="card-hint">مسلسل سعودي</div>
+    </div>
+    <div class="card" data-name="الحصن" data-type="مسلسل" data-country="السعودية">
+      <div class="card-num">45</div>
+      <div class="card-name">الحصن</div>
+      <div class="card-meta">مسلسل · السعودية</div>
+      <a href="pages/045.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB9ElEQVR4nO2awW7DMAxDH4f8/y9zB0m2k21AT7GAWYemgwmUECSFoifzQXx9Ajqog/oZrgIzxnY+wfPEXdm/j7oAAwiDiK/IQq6Ttuw3oSQBwsZRcZY1T3qz34WyEJC5w7+j3ufVFmVVklSt2YJXJ9QFVUrCKLOmzJ138eqKupilZBkLUMx5j5Ou7LfkawqK+fRaXX3Zb0HdxrwsYeUAU542Zv8y6iLaL5rPM02OgxBhXdnv0l8ICRvFwF9a8dTXExWpcXSjc3SBM4k69fVA2XLsQ0agkBKKJRKf+rqjYlO0Y9QTBVdKIl4Gjdm/j4ohLw2vImY9wpblXbxaouo9CLk05kekzHnUlf0mlBXyC0ueHVnTrDn711FLK5LiwiqPwqcfH6iQpJJs7HJylB9Hf92jCmvKLqYxHbb08aNnhB9di088ax0KT+fo1QcqzRvFdDeAXZahdPTqLVxt6Bru81rIdWvUlf1e/VWGBFFuw3d1W/a76muW1RjxjPfAqa8lRmmBwslJeZ9umDfx6opa77fXMmM4O2d+rbHeb0sOMye0Rebv7ENrXMCSmuHdl6dz+vFvlJx3avFnrkn7eXVCXfNrLNkGWU4jOvqyLftN+RozPrYhq/7dJF3ptuz35KtSg7FsZScCpSm6st+qv176xYP6T6hvmM0EJ31/BmoAAAAASUVORK5CYII=" alt="QR الحصن">
+      </a>
+      <div class="card-hint">مسلسل سعودي</div>
+    </div>
+    <div class="card" data-name="جاك وزقاق" data-type="مسرحية" data-country="لبنان">
+      <div class="card-num">46</div>
+      <div class="card-name">جاك وزقاق</div>
+      <div class="card-meta">مسرحية · لبنان</div>
+      <a href="pages/046.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB+0lEQVR4nO2Z0aojMQxDj5b+/y9rH2SnaS8L92li2Lh0ZsoIKoxjK4rML+LPb0AXdVE/4gXKk0EGWZYR3t5MZX8kXxhACMsC5C2HoLnsz+QLVWZIWSHAqba8mcr+UL4qrE4TSN4mwVT2R1HuliUBlobwGoV6wXsxmur3dV1vprI/k68qpExG7W/7x1T2R/L1rVi9fY7xGoxKEaVnEWGRm0Quk9k/jIposKqW5BattLKwrl79QMnGXoMRIeMakMnfYPYPo6LlVynhDMklW4Gbry2iJ3osGnXikGuV3vW4xauWXO2wWY2rhL4O8ZqK0tuG4K1Qy6KgF+tU9sf6PbYt431FVrquP/GJyiCUkpteiDHESmYMZv8wqryuTX0JMgFM+4Zj2Z9BGUfNO4lzGr1opT+a/bOo5aWWCd31xd7ux7I/VV8YxSJM03dNgc7ZZPbPo1abUumLePlLZsxm/zyq6svZdqeNKdLCXH/iJ6qEVwxpl8sqcPbdw9k/isow7G9+2vYyCw32VPZn9kP9yPugtiej4ldMZX9kv922jUXZFFr3ukxlf8bP6VNsANfJY++9rz/xGfv5dtmFrh24WrnOZX8WJZd1aGkZYejOx3+g3HoVrKiL6098xX6+zXIkUmXA9Se+Yj/fplRrnablRNJ3Pu6x6a+H/vGi/ifUX7dx90YXxQ2sAAAAAElFTkSuQmCC" alt="QR جاك وزقاق">
+      </a>
+      <div class="card-hint">مسرحية لبناني</div>
+    </div>
+    <div class="card" data-name="شو في ما في" data-type="مسرحية" data-country="لبنان">
+      <div class="card-num">47</div>
+      <div class="card-name">شو في ما في</div>
+      <div class="card-meta">مسرحية · لبنان</div>
+      <a href="pages/047.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB9ElEQVR4nO2awW4tMQhD7er+/y+fLoAko266eQPVC1J7q4mlayFwDFOjX8TXb0AXdVE/4iM5/sISkjFGFvtkLPuWfAlJsnAmyJEpUydj2ffkS1VZkrGQhfE+Gcu+FYVsJFsrTyN4zUWtFHlp1z/+xj+H+kiVJwssRUdisU7Gsu/JV5USRqTSx+86mcq+JV/VhSn5WVdHdc1l34IKG+G4D40tXJYiTwezfxn1URmJ9FuVJnQ8nMq+CWVZthxVhvW4Km99PVFIEkjIkNIlEUnEt76OCD+Rbj5vx/isIRLf+fGBMkZQVRU/5STiMhjM/n3UcqvRe6X14V/j0WD2L6OODK0xOxtRYfR7eE1H2bnLYXckdWOOZ/8eqvaFKNVeXitDRHbrVPZd+oVlu5Y4tSW8/v5nuFovqirNaq4OS8jGsm/qR7bWl2plf+YMPpV9Uz/GAISB5fZr4ja3H89grW845UsKC4sQTGXf6b/M48Eeuu88dERq+noHuST+GClvvnZ4vwbKy1Erg7voprLv0i9praBr7F6bnatfZ5zvt/fii1VgUXNT2Tftv8rYm/TzNW+X5E9l34sKsa8yi3qLMfwvsH8dlf4+/tHEufnizkOPON5v574wJqN0E7nfmcq+J1+VGoEMqfxpv65ffcThv176xov6n1Df9ZnsReftBLQAAAAASUVORK5CYII=" alt="QR شو في ما في">
+      </a>
+      <div class="card-hint">مسرحية لبناني</div>
+    </div>
+    <div class="card" data-name="الدكتور" data-type="مسرحية" data-country="الكويت">
+      <div class="card-num">48</div>
+      <div class="card-name">الدكتور</div>
+      <div class="card-meta">مسرحية · الكويت</div>
+      <a href="pages/048.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAACAUlEQVR4nO2awY7jMAxDHxf9/1/mHiglbjsLzCkWsPahjRsCQwi0TNMj84vx5zeggzqor/EC5ckggyyrn/vNVPZb6oUBhEAWICOb+81Y9nvqhaoyIJy53ArzFl5TUa+PecoEKoXt4jUVtdTLgCIqg8VdsKnsN6HsblSmu31kVm9Gs38U9eLaBrMzan3bk6nsn0fJy6PA+snATmW/BRURidVYgJBEPiazfxhV/V1lV9tGuIxEKW4q+z36clfmUpYxViQnj2b/MEqmhKV4iPzQ4gI49VrGa9FXKSyFQy4LdtbjO8pI2GlYBpyDUBbn6fdfKBnF2FfrQo7W+tA9mf3jqHR366pSr8hMfPKJd5RjtAykaGVZ+yS5i9dIVMeCvSvWgSihoXpNTmW/y9/b1dh71vlh/TKY/cOoW18VQqdqvg3s0dcHSsZG8fXCCXHkpWaD2T+Mqrww58fOVrF8BzvHT3yj0r8MZeqtaM4cv/o2XgBewvqSmIVTuJNPrKNaVjvU29V30mqd+8dlrPkq7txLvTNWjj+V/Z58Ik/OXUcubMuLVTwxlv2e/tWXQ6ov+zo/VjGnst/U79VZTq3Hqlg1tC28pqLW++3aEhMUureA0+//hXLdDQmsBGEnn/gY8V81uRIJq/8d4OQT72O936498upitF0dy36r/3roLx7U/4T6C9IM7F1fHOg2AAAAAElFTkSuQmCC" alt="QR الدكتور">
+      </a>
+      <div class="card-hint">مسرحية كويتي</div>
+    </div>
+    <div class="card" data-name="درب الزلق" data-type="مسلسل" data-country="الكويت">
+      <div class="card-num">49</div>
+      <div class="card-name">درب الزلق</div>
+      <div class="card-meta">مسلسل · الكويت</div>
+      <a href="pages/049.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB7klEQVR4nO1ZQW7DMAwjh/7/y9yBYux0G9BTJGB2D01qAiUISaZkCh+sr09AB3VQP9YLoJ9EQABFUQC1dsayb9ELAqyNqEjmH7MzlX0TiiQAiFYNFGkFa2c0+y6UWOEkQSD0K+p5XlNRFCUSAEEo1aud1yjUC6gyBTkHlaRcO2PZ9+hVgUTRNUzMW0JsKvvnUdTthTkS7zZ2Kvse/5VStXwFBIvmmBvLvkUvEY4rymYCqEIGgNDxX/uSkE8Ca/82ZCr7FlQJRSieXjkbKQEazb4DJaB8lyuZE7NaopOP7yjG01ciSjYTtI4nvt5QosDy9FfdomDZ+ngNRdmdag10Kqgi3snHO0oUXb9iIwRGN5x6/45yJsoRRRd9cXMZo9k/jGISbxnU2PoYWR5/vy3FsJZ78I+w8Tp+9X1V86g6HFPilV234FPZd/VD2IMJiS87MunE11qeF1I1y7kcF+MvznziJ4oi97YRCTeVExvN/lHUNV9N7+jRjmItLOJU9j3zLyDzwevmkXVBVPk5lX1Pva+HzU3UaxmNU+/X2u+3rdNuWAGCpx/a1gvYvL3qiuhqtKsBn8q+F+UzMgdlDP6p93+gJILL7yNidfMahdrut7cb7vTaEWwq++7zsab22mY5px+6rdv99iP/eFD/CfUNdbEQE+Sk+hgAAAAASUVORK5CYII=" alt="QR درب الزلق">
+      </a>
+      <div class="card-hint">مسلسل كويتي</div>
+    </div>
+    <div class="card" data-name="عيال راشد" data-type="مسلسل" data-country="الإمارات">
+      <div class="card-num">50</div>
+      <div class="card-name">عيال راشد</div>
+      <div class="card-meta">مسلسل · الإمارات</div>
+      <a href="pages/050.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB8klEQVR4nO1aQW7DMAwjh/7/y9yBkq10xdDLIhWzgbZpTCAEIcu0FApvjK93QAd1UD/GA6CvRIgCIUIAqDUzln2LXhAAWCTAisl3Y2Ys+x69wFRGoBxcQP6qhdcHoEgAIkCLxiG85qLE0CgD7s+f+HGoB3DVRqAIgSozU9n36JULTxStk6i6QY5lfz+KO7a4Mj20En4Xr6koSJC8KdpC1D85P5V9k17lCwJkzSwkcPS6ouzqw3vJlmKvRUGj2d+MonOWGKeg6rqQ56Kx7HtQlBxUJBgr1IkMJHTOQ2VkfPmP16ZAUcSOuqnsW1AMzRg2wgcje1ZK7OI1EsUVWfsGZRO28/5U9n0oHx1JLpVsKRxs09nfh7IfhT9QmlQc//UbSiIVuR7FV/D4r1co7iq0Ay7rqyHXbPb3o7STfCayuG1HNpv9rSjXox1OIZhrEySkFHEq+xa9ZKMKwNerGM1lN6ayb8v3WU4lGFJJRcnZ7O9EPfYpyPVUx5YIxvZ48tcTatW9EDoJzv4+cbfxGokq/e28CsGyJnbqOc8oSVoRFkkrC/g6/e3LKP3t9KwCM9Byg5zKvkkvDzFeN1G+UBG9ornse1HKlhpBRuVLJ99fRu1vx2pc1a/dVpvKvgdFkunluWoSWUg8+b6O0t++6YkH9Z9Q3+XTAimZ/c/BAAAAAElFTkSuQmCC" alt="QR عيال راشد">
+      </a>
+      <div class="card-hint">مسلسل إماراتي</div>
+    </div>
+    <div class="card" data-name="حمدان" data-type="مسلسل" data-country="الإمارات">
+      <div class="card-num">51</div>
+      <div class="card-name">حمدان</div>
+      <div class="card-meta">مسلسل · الإمارات</div>
+      <a href="pages/051.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB8klEQVR4nO1Z0YrjQAyTlv7/L+seJGcm2y3sw5HxcXahnWYEEWZiWwqFX8TXb0CDGtRbvAB6JQoUCBECvPZOW/ZH8gUBAOH8OGPy1ey0ZX8mXyDqRIHy0jmrna7sj6IIACJACmI9jcd59UVxW+gj6m/e8Z9DvYCVG5csihCobacr++dR0ErW+6cgXdk/j+J67lzjXcXSKs/x6oqCBClnScL2Z9vvyv4QyidLIpDuqFwRyHO8eqL8FHKdsNuzKKg1+4dRNZVeWeK+W1NsV/aH9OMtZ5konDtC4ujHFTlfKjUU0S2njNHeXdkfQTHpuoZ6EtHfoptAY/bPoyQ3RaDMnMvJqcrfmP0JlJuiAJFXd8yEP/PEDygCIuOBsWq/bYrxv76jCIlUdcnLJYxPMfPEHUUQUBleymyf2q+pX7eIH82kSOCaWj1OzLx6C8vrMm+kGDyqLUGjt1d4XhXLylGOWskijR56R4nIHKF0R1p5ZyLrzf5R1DpWKFFUygjIxujHFa/VCFmZ2tRRmmZX9mfqfRb+SqGvYj/1/h0lSVePdLG/DHzNfH+L7f028xsP2j3SOrwr+0P5cij5sTJKZxx/4jNKnuhBgozzpan3t9jfb9uRqGPF7bVaV/aH/AmSvKzp8iTitU69v8X2fvuhOw7qf0L9Abk6EhDA5hORAAAAAElFTkSuQmCC" alt="QR حمدان">
+      </a>
+      <div class="card-hint">مسلسل إماراتي</div>
+    </div>
+    <div class="card" data-name="حياتي أنت" data-type="مسلسل" data-country="الأردن">
+      <div class="card-num">52</div>
+      <div class="card-name">حياتي أنت</div>
+      <div class="card-meta">مسلسل · الأردن</div>
+      <a href="pages/052.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB9UlEQVR4nO2ZUYvjMBCD9S37//+y7kEzTnpb2L5cPAd2oUlqQYWwZc0E64Px9QnooA7qx/iWyJ0l5PWAfM1MZb9FL1kq1YwkC2MJr5mp7PfoJaLZJRk9XTNT2e9FZTUZ1sMMXlNRCPkvpf7tP/5/qG+pFcLCMjGw9rJNvKai5F5OfvNpyFT2z6Pw/b4DRaLENTWV/RYUEgIR8Zwl5/jZRl5TUZYkL9+SoLIXUr4Gs38YJVtuF6uv7MNcLR//ekUZC1y70LhFlF3+Npj9FpQ71mOEBJIMvSlns38YFZeKOpaSwJxKqI7PwewfRsl2HYmu+3VESoq3Hf96RZGFZOhMAUvDjbyGomyngxOpVnUkuSLYZPbPouTahr4ShLwya4WNqez3oCAbkqs6SpCgzs3R7J9FkTa0qj3BaoKtNuseXoNROEsMGZvugq2K+/SjX1GmU0W5u+vA7GJyNPuHUTjrirWYbg/9PJb9Lv9KlG/tVH2KuBmey36ff4msq5SNGUTK41+3ceuvIrlVM74dnWPZP4+6vd9eO3OF/KXYVPZb9Gqjb8synbzcPYqp7DfVQ6qWRHWmu7/al1MPvUVVzQ0RkQiIz358jzJt74n31J485+Nt3N5v10gIq/BVLjaV/R7/qpurjbP0q9+Of62Bf8fMZX9Q01F/AETJIu7QusW1AAAAAElFTkSuQmCC" alt="QR حياتي أنت">
+      </a>
+      <div class="card-hint">مسلسل أردني</div>
+    </div>
+    <div class="card" data-name="أهل الراية" data-type="مسلسل" data-country="الأردن">
+      <div class="card-num">53</div>
+      <div class="card-name">أهل الراية</div>
+      <div class="card-meta">مسلسل · الأردن</div>
+      <a href="pages/053.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB+UlEQVR4nO2aS24DMQxDH4ve/8rsQp9x0xToJmMFtRaDSUwghGBZFB2ZP8THX0AHdVA/4hMUbwYZZFlGeFmZyn5LvjCAEMgCKl29Mpb9nnyhzAyZp0ia3CtT2W/K1xVZlGsK9/CailryFXlybjJrSdhU9pvyVcVo8rzPauyVqez35CvbYHRG9ZJcK2PZ34+Sl1fh9YvX/OLbo2ITCbCVwgKEJOIxmf0GlIRkohQNRgjZRuCjvx5Rjp2FamcZYwmyQEezvxUlRy+sgz764iVbgZOvJUJPCEQJ+qxBOSWYzvx4xWdsqcxLbLP8oGuPTWW/R0903alEfVoU5GMs+z16whg7DjIvFcnpj89QDisnc6OWrDVJ7uI1ElVDz0NXTNOwjLCp7O9HYbvHajuGbLdb6BBnU9nv0l/pe4kascsqPH7hQ4T/Va5EHPhlhClzdvTXA8qAkRwjkYRyHMrV0ezvR2m54XC7q1mfx59Yo/xosxjS5YW5GuVU9nvypdalvbNcsiyOtqns98xD12uNjzUNlY8/lf2W/VW90T02lrmjGsOnst9Tj3Xh2G6he348/sQzVJj0JU+zVzq+9qnH31DXgS/V8R+K7B3Y34/qv06AlSbi8Se+x3q/Hf8BEMaXc3jmx2+x3m/Hs1VFqC+f/rjG0+vsl/7iQf0n1BeOYOlcN3xLWAAAAABJRU5ErkJggg==" alt="QR أهل الراية">
+      </a>
+      <div class="card-hint">مسلسل أردني</div>
+    </div>
+    <div class="card" data-name="نهاية العالم" data-type="فيلم" data-country="المغرب">
+      <div class="card-num">54</div>
+      <div class="card-name">نهاية العالم</div>
+      <div class="card-meta">فيلم · المغرب</div>
+      <a href="pages/054.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB90lEQVR4nO1ZQW4EIQyzq/n/l92Dk8C2PeylJFVhpREMltaKQsYxFN4YH++ALuqivo0HoGcCAW0LrZ2p7FviBQGOmvIpQqRqZyr7nniBETMgMoyZaLEzlX0vSpFbjMUUXlNRJKgvkfrdf/x7qAfICFGgIFYBq52x7M+joEwn/fBLyFT251HUy5yK4rUlVwuvwSgCBOkHIKecAKYAm8z+PEoAIBFKNUFYexHwYzD7wyjIdcpB88PnMN/r1q9tPICLlmCZKoYMAyDQ9W0q+57zWGfPB5KIQkbmxmD251Ek/J20sLcCi5SLz+dg9odRzKBkvy0C4vImCM1l34QiQUnKRAtzQlX8R7M/jhLkLtuhqu4oq9ls9mdRkCCtZBIU74C1nMq+t39EWDqQUpU5bDdeNdwz6mVmRbYtx7Jv64cIhlr1BJudc/3oL6hoF30gGe6ErbAQZZPZH0dZxZeP4xRbHsX17/dB1aWG4yYrWDdEKfGnsu/1J8LYWRYFEFpjKvumeq9NcPk6rXSZc28w+8Oo7X5bdbudIp9ZwKay7/G/QjXkpZCYykvpUUxl39Zvu7xH1Urrnjb1+3jNRnF5hRLE8BF1z+M2njW1fIgKr5D5tqansm+K17popFKzxn0R7vfxZexOanaL9cpG643XNvb77TP/eFH/CfUJ7RwWBtbLHbEAAAAASUVORK5CYII=" alt="QR نهاية العالم">
+      </a>
+      <div class="card-hint">فيلم مغربي</div>
+    </div>
+    <div class="card" data-name="علي زاوا" data-type="فيلم" data-country="المغرب">
+      <div class="card-num">55</div>
+      <div class="card-name">علي زاوا</div>
+      <div class="card-meta">فيلم · المغرب</div>
+      <a href="pages/055.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB80lEQVR4nO2azW4DMQiEZ6q8/yt/PQBep80hly5EtZUfZz1SRoiFAdbojfX1DuigDurXekiOHbKQjHHt62Qq+xZ7CUmyjIyla1MnY9n32EsOy5RbyfFinUxl32SvbSGXU22ZYCr7VhRIcT9aEvYQXqNQD2l5kql4LxNuRhevqaiHVhqMzHh5lamTsezvR5lta54u/M0/fjwqnGjFLMcFy7biYzL7BpQtG2GheFmWATlSwGT2DainxBjKlUyQoS9Gs78VZdZHVERrv5VDY9nfjwrVVTukfEOcAIKp7FtQSIJMi/GjSqIT71+ijO3MkChFRRWT5378gXL6FGWlyoo6+fEVKkS95VAWVXFHA4w+XiNRVfSsDJmNr2ga1j05lX1XvCcCe4oI4nuF/NHsb0ZdTcFwpktzueJXC6/JKEQWjTi0F9XcSZtNZn87yiLCfPVUbXnrFx498ROVpZCQyarbIq4dvfoSBSVSI9pjZ4V09Ne+UjKsrupS9dVpxWf+uK29v5rKtXJlTW9beE1FbfNtVP378q3V7JnKvsVea4qdy2uwth4JmMq+x17XcNZRdafFrkcCprLvRdXzJsJO6apoUn8C+/tRSK76yL66rd28JqH2+baoHg6mZMWpH5/WPt9eUoKqG7OvM5Z9q/666R8P6j+hvgGaq+tPpt/jogAAAABJRU5ErkJggg==" alt="QR علي زاوا">
+      </a>
+      <div class="card-hint">فيلم مغربي</div>
+    </div>
+    <div class="card" data-name="حجرة تعلو أخرى" data-type="فيلم" data-country="المغرب">
+      <div class="card-num">56</div>
+      <div class="card-name">حجرة تعلو أخرى</div>
+      <div class="card-meta">فيلم · المغرب</div>
+      <a href="pages/056.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB6ElEQVR4nO2azU4EMQyDbbTv/8ofhyRNWThwmgbRLD8zjKW1Itebuhj9oj5+A7qoi/pWL8lxhWSxbiz6yVT2R/olpOga9RODzXoylf0hlG0phVYtCm3lk9Hsz6Esybj7NoTXVBT19dg7/jnUS6oOGRnhMLCwfk7xmooSJSd+eBVkKvvnUWa/NmX6m7iO8BqMsmTZipcIyaG4PcdrKgpJIiZVLMlWzF5ryhjM/mGUCJ+qby3fqr9z/esNZSQDRgjTTST9bTL7Z1ECoj2lqrVAV9+uvr6gwqVYoyoWwmH5nOM1EhX6UomsBLZNZeLq6x0VPpWjvaQIJ1jmP5v90ygsx+4Hh99L1TfdfOJLrf1jbhcxPeFjjH3zwi6jzFUx604KxcXMevvVZbZ2ZXeiWRGznuI1G5V5qi1wCKzjnJtHb7XnEyph9a+7Hr+jnNKSlGvTcmcUnOI1EuU1xK/Pw9RXzmMyc9kfyifodHWfUuPxzSfeUJ1HqAIwZR/JD8zB7B9GbefbeCWqOUi4DGwq+zPzfdpXzWCxPUq/DwObyv4QKk6xc17t6N4uxY1mfwpl6uRDIBymZu563OrVl7lhlHK8d2Zhdz1utZ1vZ1H7yQpcr762cv+XV4+t69yxMoup7I/vHx94x4v6T6hPY+oV/Ek2gogAAAAASUVORK5CYII=" alt="QR حجرة تعلو أخرى">
+      </a>
+      <div class="card-hint">فيلم مغربي</div>
+    </div>
+    <div class="card" data-name="الجامع" data-type="فيلم" data-country="تونس">
+      <div class="card-num">57</div>
+      <div class="card-name">الجامع</div>
+      <div class="card-meta">فيلم · تونس</div>
+      <a href="pages/057.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB80lEQVR4nO2aS24DMQxDH4u5/5XZhSTbTbrIylZRC0hmkiEQQtCHkiPzgX19Arqoi3qzBxR3BhlkWUZ4edKV/RF/YQAhLAuQFx+C+rI/4y+UniHCKr0ljydd2R/yV5pVSbm68AyvP4AqPyEBlprwaoV6YCajyXqPHGHmU7y6oh5GG4zOOKNqlv227Pej5OVWYP0mYLuyP4LKbsgiLOIiEW+d2W9GRdJFZ8yPrlAj2qSuXn1BGZxBBQgZZ4MM/7VmvxWVPZEq9FG/VtnK9ddikYDLCElV/Roiufm42BPOcVYyj8LlDL1DvFqjhKRR8HMmqvC6+fiCkg22Zm4q63/1zs7s96OyNXpsJTLUXHW/NfvNqFzapFQdfTKXhpWTXdkfykfsFPIYcBR6DT3Wmf1mVOy/UkJ47L5wyNYMva7sz+UjjJzUj9z01V+rPYz5cSwIheW52Lnx9YIaYsu2Y/S2cHx39xPvKIOH9nJuWQWOubs5+62oaIbzFdrVdq2iDXZX9of2E3mb5481S+JR/buyP1XvISaiofHnCeTdf72hIv/SUtLXpH33Ez9tPd+OPwPgnMCn4G/L/pS+D1MpVtcirBzYlf1ZVA2RAisWYXc/8WLr+XbKfByNMmfJ2x9XW8+3h5TIuZHa67Rlf1R/bfrFi/pPqG8eWe5HQsLclwAAAABJRU5ErkJggg==" alt="QR الجامع">
+      </a>
+      <div class="card-hint">فيلم تونسي</div>
+    </div>
+    <div class="card" data-name="عصفور السطح" data-type="فيلم" data-country="تونس">
+      <div class="card-num">58</div>
+      <div class="card-name">عصفور السطح</div>
+      <div class="card-meta">فيلم · تونس</div>
+      <a href="pages/058.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB+ElEQVR4nO2awYoDMQxDn5b+/y9rD7bTdLaFniaGtQ9lhggqjBPLysh8ET/fgAY1qD/xAMWTEQZZlkHeVrqyP5IvDCCEZQEysnmutGV/Jl8oMmOixFDmbK10ZX8oXxkyuRFBWWGneHVFbfmKyqoic5TaKV5dUQ+gEiMbybKIM3+tdGV/Jl/ZBqMzai3JtdKW/f0oeXsUWO8EbFf2R1BRRAIcR5jiXRLx05n9AZSEZGIrOpSrkG0EHv11RRlXUQEKYWEJCBnWmv2tKGUNxTSkPL+WbAWYfL2iQqXWIATSM2e2Zz/ukXo1mqKz2ljzUNZYV/aHUELRDL3NROlXzH68omTAdqZLVFdk+uM7VIh6lQ5zadhlV7RmfzNqM22iQ6YKk6vaxs+5ooxVXdHaZX6Jss7s70VVfeWwXSZ0Vd34hZ9QmTRhbIe5s3LWnv1tqEeVWNWZUuU/jZ3RE39RRlFL9nJXc0Qaf+IdyiUjwreXFQe/R3+9hJYmjViqvpxWa+4ft9j91VSuXlmkfPyu7O9Hsa7N7LQq7Bq/691d2Z/xJ+oWO6bruHnM+XH8iUvs99t5r51fA4S/Ggtd2R/zv4A6y0J72dUG5rz/hHJOjKVb85uK47w6ofb7bZYjYdXnAONPvMZ+v01lzDU3pq/Tlv1R/XXTPw7qP6F+AZh29Ex4tDRtAAAAAElFTkSuQmCC" alt="QR عصفور السطح">
+      </a>
+      <div class="card-hint">فيلم تونسي</div>
+    </div>
+    <div class="card" data-name="بنات ألفة" data-type="فيلم" data-country="تونس">
+      <div class="card-num">59</div>
+      <div class="card-name">بنات ألفة</div>
+      <div class="card-meta">فيلم · تونس</div>
+      <a href="pages/059.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB+klEQVR4nO2Z0U4sMQxDj9H+/y+bhzidYeFKPE2DbgtaZjWWsKI0cRyZX5yP34AO6qC+nReongwyyLL6ud9MZb8lXhhACGQBMrK53oxlvydeKJEB4founAzzFl5TUa+vX3MR7yHcw+sPoGyMAAmwNITXKNQLrstopd5TNX+9mcp+T7ySSNUZr6yS+81Y9lvi9a5YffvZxmswqpKoahYRFiAkUR+T2W9ASUjGwtSvELKNKoiT2W9ApTGmJQoZ55uRh7N/FFVFPSIVSqVeshXgxOt2oicSrEh7Slg4YTvz43VeFRwn0+zOtrqICeRU9rvmoSW6VCpCFlal17mPb6iq7raU3tg3ktMff0K5rJyl8jNxVzXzPl4jURl64kk4DhhlGlZJ28JrNsql5lPgXX9FK/3h7J9EdRPsZLqZ012/tvCajFKFJwlmbFOOdMdsMvvHUbIzAnXohG5+4dET31FV6I1T4a1+PP7El3PtO6IiYt87yrUa5VT2z6Ow0xC7doFtL7PQYE9lv6k/5hG34FquRXz8qey33MeWEF5bjnbxlcl7LPs99asXjmsi8pofjz/xdu77bZNFWiJWk9EeXn8BJbCXldMbbh29+g+Ua+8RK99019zNaxLqvt+uDZEwlWXA8Sfezn2/vWxp99wYuTqW/Vb99dB/PKj/CfUJoYvqWtBhZlcAAAAASUVORK5CYII=" alt="QR بنات ألفة">
+      </a>
+      <div class="card-hint">فيلم تونسي</div>
+    </div>
+    <div class="card" data-name="حريق" data-type="فيلم" data-country="الجزائر">
+      <div class="card-num">60</div>
+      <div class="card-name">حريق</div>
+      <div class="card-meta">فيلم · الجزائر</div>
+      <a href="pages/060.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB70lEQVR4nO2Z0WpDMQxDj0b//5e1B9tJut1BnxLDYkp72wgqjOPIiswH8fUJ6KIu6le8QPFkkEGWZYSXla7sj+QLAwiBLEBGsU1zpS37M/lCmRmirCJzUW2x0pX9oXxlWFClJXk5CbqyP4qqzYcEWGrCqxXqBXMzGiTLiq4/V7qyP5OvLKQ4GbWu1peu7Pej5OVR4PGDbv96RkURCXAcjgKQJYGkU7zaoiQkMySXEUK2UZyandlvR9nGWVTxJuM8IENfNGa/GRWiNEWqlf1r/AJw87XEbO/kxFhdv4ZIdOfHGaEnRtNKjT9nSB3i1RwlDRFWRkWV192PP1AyISVUjT/rjHs+PqFC1C8FNs2crLDO7DejFtOGpWOlaVh7siv7U/reo4NJq8wvUdaY/WaUnKaqhxkNQ1pcv/ABZeFs8waMq/mPnDVmvxmV9x1aGhjC8jR2rp5Yww61Wi9HhUWRRcHZXdmf0ffgUqfDvreIRMp3HloiJUMp1Knqy2m17v3jEm/+6hBcqpNR4Vd0ZX+s3wM2yj5ftaWcvNuyP9O/6iJN+WGP+fH6E0+od3ditv4h9luzP4cycpisGkYYunr1D5TnnnRdgFx/4j3W++3QDsJh8ZTWP8KrK2q93yZ3pFxzY8rVtuyP6q9N/3hR/wn1DfVs6VM0Ux8JAAAAAElFTkSuQmCC" alt="QR حريق">
+      </a>
+      <div class="card-hint">فيلم جزائري</div>
+    </div>
+    <div class="card" data-name="كراكب الأمواج" data-type="فيلم" data-country="الجزائر">
+      <div class="card-num">61</div>
+      <div class="card-name">كراكب الأمواج</div>
+      <div class="card-meta">فيلم · الجزائر</div>
+      <a href="pages/061.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB+0lEQVR4nO2awW4kMQhEq6L5/19+ewBst6JIOTVEax9mPE1JU0IYCtxGv1hfvwFd1EV9Wx/JscPIyMJCin1YxrJv8ZeQJAsjidqxLWPZ9/hLTu9EhKHtvbRMZd+KspFwbHCdxnZefwCVYfXiP/4V1Ec6fGOBjBWfyzKVfY+/6uBhLFcm02GZyr7FXzu6MJLlSGOHZSr7Hv2F8vRJ1uOHJOSrv44F4vgQEsRvAQGZyr4JRRxFI1JS7KOIGM7+VVR2PZjUED6t2ReNZd+Dgkzy+RUSH5BscfuhY/mhS5353Rlvzt57KvsWlC2njIhlKyqlMbiL10hUddURV/Eg9cSR96ey70IhbCR7t0EhKSLYZrN/EyVCeIFCgsVDXf31MypFPTFd3VPCzP9XTzxRyHJVQgx7vprumsy+ARWiPsf1ZHVUyIkom5PZv4v6KOddVSeX4LegOu+p7JvOo3DUweweCdVll5wdzL4DxdL52RLFoFXExcdw9q+i6vhV/1gddp3EeDaVfUv+2pGVkVbuYnVJU9n35PvYVUNUckyuznsu+y49kfJeeQnpHW3c++3HOu6382ZIRK1c8qKF11TUZ29jeEMksKqM932An1G43geQnZMvbr5/rPN+2/G2yZp+sWxT2TfNJ2xb4SyvmcS64b75/ljP+f0b/3hR/xPqH0mzAjuwJielAAAAAElFTkSuQmCC" alt="QR كراكب الأمواج">
+      </a>
+      <div class="card-hint">فيلم جزائري</div>
+    </div>
+    <div class="card" data-name="دمي حنا" data-type="فيلم" data-country="السودان">
+      <div class="card-num">62</div>
+      <div class="card-name">دمي حنا</div>
+      <div class="card-meta">فيلم · السودان</div>
+      <a href="pages/062.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB80lEQVR4nO2ZQY5kMQhD7dG//5XfLIAkNd2LXn1oTVhUpRRLZSFMHGL0g/jzE9BFXdSXeCTHCktIxhhZ7J2x7FvyJSTJQo4EOX9RO2PZ9+RLWVlCxkIWO3W08PoFqKyv+BB8j3qf11hU6k+pyBf+8fehHikbWLV4ti5rZyz7nnxVKWGEJTn6PGtnKvuWfJUIz2/KXnTxGoyyjjZvvE/H6GPXTxzxhAxTfOlRnZJ0mbCp7JtQWVbpKLAOKd76+oiqK7NORh2VltU3lX0LCiGtdEkOK2GQiMY/mP37qOj3VBsLLZaTiM3B7N9HAennyUtjJMwiZhWj2b+MytzUICJtVyoy29lc9n0o10CCrcjqZvPZv4uK9pW2Xg57UackV4//ohCW7RpQLHFef/8l8lK9HX40sRxMV2ebyr7Nf9kuq8qyE9hw/cRHPAqvWpfGNPVrZGjh+96x41lz+8rVHnshOyzZVPZN/mtNI5T+NA7Imrve+toR74/kaUiJMxbL809l31VftVyX7jUNo4nXVNR+N+P4FIK0Ywimsm86H6XzsphD1ZzfXz1+xPG+XYJ0XcB3y5/KvhtlMIcm87rdzmsO6tlLk6+0ucjZ4dXjGcf7dsylw9GnT635zlT2Pflaj40IQ84p9s3o+tUdh/966R8v6n9C/QX/H+JgbQ6jowAAAABJRU5ErkJggg==" alt="QR دمي حنا">
+      </a>
+      <div class="card-hint">فيلم سوداني</div>
+    </div>
+    <div class="card" data-name="الغربة" data-type="مسلسل" data-country="السودان">
+      <div class="card-num">63</div>
+      <div class="card-name">الغربة</div>
+      <div class="card-meta">مسلسل · السودان</div>
+      <a href="pages/063.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB8ElEQVR4nO2awW7DMAxD+Yb8/y9zB0mOg/WwU6RhNtrArQmUICSZlov1i/H1G9BBHdSPcUnEzBKWMMZC3lamsm/RS5YkhI2RVHKtlbHse/QSqYxSpxANr5Wp7Jv0ysFKyl3CHl5/AGXLEVpIMgzhNQp1SXcymqz3+VwrU9n36JWBFDsj+2p9mMr+fRTepsj3F5z69RkVQRTZh0R8gQEJ6OI1FgUCy8iKF2HHLCQf//VEuTZGZ2QJy7lBRoIOZv8yKkypkSOUTBjWsq2Sjl7bWGefJVEI523lnB8fKN+1XnY+yPA69f4DygJkkaVLZNWvQ/do9q+irrT1mXjKPIw6tmZT2ffkY5T4cFtiWVZXURvN/mXU1rTZd8VsGlZOTmXf5e+NgFLLMVklfzT7l1G3SHg7cFfUnX7hR1TKg+NtS3jTbDb7N1FXKlP7Iwq/77uxc/zEPuw6ZTufspxBprCvnsq+Lx9Tp4w2YUgJT39iH2kZ8ty4ufrqtJpz/7iNR391WX1qZ4xbtbHse+p9zGxVX6dii9oFprJv0WvdYhPVilSubEYLr6mox/32KmGhWDnXuey7UZZsZLLfKsXtbTevmSiT/zeJqcqAdfOahNrvt8M7RBVz2YpzfnyM/X57WQmvy6Lo64xl3+q/XvrFg/pPqG9ZbPhHbDJW4AAAAABJRU5ErkJggg==" alt="QR الغربة">
+      </a>
+      <div class="card-hint">مسلسل سوداني</div>
+    </div>
+    <div class="card" data-name="يا مال الشام" data-type="مسلسل" data-country="سوريا">
+      <div class="card-num">64</div>
+      <div class="card-name">يا مال الشام</div>
+      <div class="card-meta">مسلسل · سوريا</div>
+      <a href="pages/064.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB+UlEQVR4nO2awW7EMAhE31T7/788PQCO022lngJV7UPWG4+UEcIwYMv8Ynz8BnRQB/U2XqCYGWSQZRnhbWUq+xZ7YQAhLAuQiUmtjGXfYy+UliHcCqXN1spU9k32qiEIM4HkLRNMZd9qLwMKpzJYXAabyr4JZVegMnJF/W1lNPtHUS9WGozMqH21/kxl/zxK3qZa4eu+MpZ9CyqcSIBRCAtAlgSSuniNRUlIzgjvMJuQbQQ++uuOipguQOFZyBgrXc6j2T+MkkuThitFXlyyFeDYaxtXeN+MhkPe57tTP95RufEA7Hwo3evE+29RkiIxytWoKPc6+/ELSrbCp7wkBV764uTHL6hIhLn7qjFBNMRymw5m/zAq8mM1uq7Gl24hfyr7lvpxGSnl6pL56WknP24je6lOT/OluVTxq4XXVFT1v3TTXqT5qoE4lX1b/0t2bkVH1M8sAEdPvKPCOoqKe3VXY3r06jsqrGNjEX17WQJH3T2c/aOorIDYCyLbuT3jtT2VfWO9HbuyDmorM2Yffyr7lvxYEsJLTmj95mMq+x49UYdDAM6Tx6wf8/VU9k36S3tBhEmLXVcCprJvRkWjItSFlxFPfvwBZeV9k5huWfMvsH8G9YJ12eTSq1ZdBzj9ifvYz7frDphctXb2dcayb9VfD33xoP4T6hPO6vBRhMaiPQAAAABJRU5ErkJggg==" alt="QR يا مال الشام">
+      </a>
+      <div class="card-hint">مسلسل سوري</div>
+    </div>
+    <div class="card" data-name="أيام شامية" data-type="مسلسل" data-country="سوريا">
+      <div class="card-num">65</div>
+      <div class="card-name">أيام شامية</div>
+      <div class="card-meta">مسلسل · سوريا</div>
+      <a href="pages/065.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB90lEQVR4nO1ZwW5DMQyCqf//y+wATtO3Hnp6drVEU5stSEOWHWNC4YP18wnooA7qz3oA9E4gBFAUa18nU9m3xAsCAIIARQBUNnUyln1PvEBHRnRagf7ROpnKvileWRQhsJJq6wRT2beiJML1SAAih/AahXoAK5Mo0vd9PtfJVPY98UoiuTNyP61fprK/H0VtW2r7A8/99R7lJHL1McLCxUmAZBevsSgSpLAkl0AQlAQCOvrrFSVFcymZBQpKg7S+GMz+ZhSTQ4LFhOjgJYQAcOK1rcxDCVcuMIgApYTtzI8vqBSePBN5m7id+/66rFddeS7NmBQQnV6nHi8oik4vCtorEqc/vkOp9JYdipq4bYCpj9dI1GbawO6EVZhNw/iGY9l36XuR5BqAosfWlT+a/c0oRqQ6o1gmtJ4C9uTXFWU1v1SrBT+1xWwy+wZUGmQN2yS4+YVHT1xRFR0REfWiAygcvfqy7N8rr2nL/7KVr2qUU9k33fd1568bDPW05kwby75Hf9UWtqO1XIvyXMeyb6nHyi2tQZLrOx9T2TfpCdkyrJyywYNSYW28JqL29+0Un6y9IijUw+tLUJ65xZitgF9v23mNRGXEzkD59A+7eU1C7e/bEWCQG+XyLOay74lXvW8jz0FRFVb8Ov1xX/sr9j3/8aD+E+oXQC/rYew/BKgAAAAASUVORK5CYII=" alt="QR أيام شامية">
+      </a>
+      <div class="card-hint">مسلسل سوري</div>
+    </div>
+    <div class="card" data-name="خان الحرير" data-type="مسلسل" data-country="سوريا">
+      <div class="card-num">66</div>
+      <div class="card-name">خان الحرير</div>
+      <div class="card-meta">مسلسل · سوريا</div>
+      <a href="pages/066.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB+UlEQVR4nO2Z0WpDMQxDj0b//5e1B9tJ2jHoU+2xpHCb3ggqjOPIiswb4+sd0EVd1I/xAMXMCIMsq+a1MpV9S7wwgJCRBcg7UoDmsu+JF4rIVFohwMhrZSr7pnjlMLEhASQfJ8FU9q0oI0uABMR0Aq9RqAdkmQIZS5YVVX+vTGXfE69MpDgZda7Wj6nsW+L1qlgdH3mvTGXfgookipoFKF7IkkBSF6+RqNBaVuaSUka4JAZYV68+oezSXPVQbMgtwwaz/zAq8wtZOLOJQ7YCN17HUClUQfaQGbWt9u9+3CP6IWdiZbRYhSxzbCr7pvwCohXK7UhaFORjLPvPo3DKLRMNZEzt/AHGnsq+53wUqjZ7b8RKuD5eI1GHacN2wEjTsEr+VPZd+t5IWjo/9Zi2KBvM/sOoVe9dyiKFxVnux7Jv0ROq8Mjp30MK2ZSyY9k36S/E6olKVmxj5+qJF5TDTVUY0vElHNPrTzyNyC+nd8+y7618qetPnCMlQ7XWS0GUsAirZyr7nvOxpjtc1Q1V9Z/Kvut8BLCPszG1WHbeY9n31K+6xc4v2WlNr158KvsuP6fM52V9eV1AuofXn0DZOIzWbYSh2w/9grLKNcTK67TrTzyP836b5UhElkE5OlPZ98Rrl3p7eTrOG0nf8/Ech/760D9e1H9CfQMnP/JN1VQjzQAAAABJRU5ErkJggg==" alt="QR خان الحرير">
+      </a>
+      <div class="card-hint">مسلسل سوري</div>
+    </div>
+    <div class="card" data-name="زنوبيا" data-type="مسلسل" data-country="سوريا">
+      <div class="card-num">67</div>
+      <div class="card-name">زنوبيا</div>
+      <div class="card-meta">مسلسل · سوريا</div>
+      <a href="pages/067.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB7UlEQVR4nO2ayY4cMQxDH4P+/19mDlrsSibAnMoaxDp0u8oEmhC0mW6Zb9iv74Au6qL+sg8oVgYZZFlGeNuZyv6IvzCAkJEFyJsPQXPZn/EXSs8QYZXekntnKvtD/lqWSbm78AyvH4BylSwJsDSE1yjUB1YyGkW9z8/emcr+jL8ykKIzat+th6ns30fJ21LgfqFbv75GZTcEHM1RALIkkHSK11iUhOSsVQYjhGwj8J2/nihnWGUsxeTqbJBGHs3+ZZQqhlxf4bw1tnL9tVkdFXNAzfyzvO3c8+OyD1gy7bMc7MNhFWNT2R9CuUqXo3ShrPqOl7PZv42SAVvtpYozbn/8CpWD1lIl1JNFRthk9i+jUutyP8SBKEXDysmp7M/U+xYIXfVerR9y++PD1riVx8d4XVLh1Qv/sKU9bwp+bWSw3fhaFvqq2zuKOUL27sap7M+gTB8WsZVlzFHsrz7xsNBX5T0PiWLmcJxvPu5mEzXd/WjbJe9EzE1lf6g/5hJnhS/VIjTqI7ymoiK+ahEpuKTDfL7x9UBF/rEiK+WK9ZeAyezfRT3vt1uk6JYZG1PZn0c5RFa1EIauPvEPlJX326khrq75E9i/g9rvt3u6j0aZ/6O4/XG3/X6b0ipapMhxdSz7o/PXS794Uf8T6jdrdPY4lyTVxgAAAABJRU5ErkJggg==" alt="QR زنوبيا">
+      </a>
+      <div class="card-hint">مسلسل سوري</div>
+    </div>
+    <div class="card" data-name="الولادة من الخاصرة" data-type="مسلسل" data-country="سوريا">
+      <div class="card-num">68</div>
+      <div class="card-name">الولادة من الخاصرة</div>
+      <div class="card-meta">مسلسل · سوريا</div>
+      <a href="pages/068.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB7UlEQVR4nO2ZwW7DMAxDH4f+/y9zB8mK03VAT5WGWYc0rQmUIGyJkmXeiK93QAd1UD/iAYo3IwyyLIO8rUxl36IXBhCyZAEysrlWxrLv0QuFMiK2GErNamUq+ya9VtRBBOUO6+I1FbXpZZQpDINjq3Xxmop6AEsYWZnv81krU9n36JVlMCqj9tX1ZSr7z6Pk7VWZwp5XxrJvQcUmqtOn+EGWBJK6eI1FSUjODO+V+GUbgY//2uJ2/JQuP2yFcD7Hsm/SKx5c+atsK3D02iPdqUMcb6rJS7bTP15RfiIOYahF9UO5x6ayb0I5y2D0jdkTre11zuMTKnyXXSqtqsipj69QYeljh10Hkeoku3iNRF2ZPtTJhiiGhpXyp7LvQTkS2LKrOMRTZvtzHrfYnMQyE/F1mdezv26R86/UyVTHreiKQsip7Hv0CgOxHEW4MF+DneMnfqIsOTpu13Q1kv2ZT7xACVvLqoa9l8DGx3/dw6bGzhgbbNvrN4M9lX3jPCfTliqdsW5vW3hNRW332y47ofrMx1T2bfWxbmadN4/rdujMJ+5xu992OS6DVY3SWPbNqJhTCOsahKFTH39BmXCpCj/GVTn/AvvPoPb77Woio1BmWjv1cY/9fhtiaJiuQqy5zlj2rf7rQ/94UP8J9Q2NhfBT1/srggAAAABJRU5ErkJggg==" alt="QR الولادة من الخاصرة">
+      </a>
+      <div class="card-hint">مسلسل سوري</div>
+    </div>
+    <div class="card" data-name="التغريبة الفلسطينية" data-type="مسلسل" data-country="سوري">
+      <div class="card-num">69</div>
+      <div class="card-name">التغريبة الفلسطينية</div>
+      <div class="card-meta">مسلسل · سوري</div>
+      <a href="pages/069.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB70lEQVR4nO2awW7DMAxDycH//8tvB0m2s+2wU6xhFtAmhQmUECSGlmP0i/j4DeiiLupbDMlxhzGS53WttGV/JF9CkixEJMiSQaZW2rI/hLItyZkhkHAUV6z0Zn8KhbGkzJ34GfU+r7YoXEny1K4OvDqhhlSlZCFn1py54xSvrqihVUo4Jd+h88yVruyP5KuEiseHXcK6sj+CikdhyLyNLZyF5VxtzP5l1Ig2zOZLj+psSZcJ68r+lP+So77kEPytFW99fUUZhUkVBqWrF5FEfOtri/AT1Y2UV3V2KLHYlf1BP4F2B5aWQgrP35X9ERRA6NTMkfJ3zio6s38Z5aqrujiUa5YbZ3i1RjFHFDZlWbM5fftxj5wXplwRBjXaMKc7Z3g1RiEh267s1JTw+vufUVlKGKecSSAM1vX3X1EW7AaiUiZsYkbRmP3LqJGPw9Kv2GgzR4a+fvUZlakY228zQgESQtCV/Sn/tX3VrHBtum99bTEeuyDVEH8dEd390CNK5hVSldN7zWkYh3h1RZV+Kec4u5xRo+mrXzP28+0y+WHHcn5/+/ERQ9pPZ11OYvrWQ7z+BMpab01kg973AZ4x1q1xibyp9rz+/hnb+TZ5UhRvNtWJGndeuMd2vm2B1h577YyuX12x+a+X/vGi/hPqE9+O8EwxYQ3KAAAAAElFTkSuQmCC" alt="QR التغريبة الفلسطينية">
+      </a>
+      <div class="card-hint">مسلسل سوري</div>
+    </div>
+    <div class="card" data-name="الأرصفة الزرقاء" data-type="فيلم" data-country="المغرب">
+      <div class="card-num">70</div>
+      <div class="card-name">الأرصفة الزرقاء</div>
+      <div class="card-meta">فيلم · المغرب</div>
+      <a href="pages/070.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB+ElEQVR4nO1ay27DMAwjh/7/L3MHUq7TdUBPsYZJ6MGICZQQ9GCkUPjAvj4BDWpQP+wB0CeBEEBRrHPddGV/xF8QABCEKAKgQKdpbtqyP+Mv0J4RHFbg8lluurI/5K+nCQktUlsn6Mr+KEqgSAAkAB878GqFegApUwAFkaIIymGmU7y6oh5YbdCd8RlVVN20ZX8/itqOBLQecOrXe5SDiNiEBQCKJEDyFK+WKIsGMZWqZIQiJBJxXdkfQpXmSmSBgtIg7b/W7G9FUa7zDjGmfi3ZCgDjr80ecE6K9hKTgwCVLJ18vKKkJGCJeynpian371CrDcKaNRGXrJx8fEFtwUXtGen01MwnrqgIrfjmMswpmdGY/c2oDG0iVVdXzNCwcrIr+zMol6yUMLreO97qSWf2t6NYJQyyYmV8RqWKdWZ/ClX1C4LirIxXJ75eUFam8khaAD3Lr2HOxNcLag1WsVSXCPk4evUnKvVKftf2O1CKmEZ/XYxLk9qWqq9Jqzj7x80u89UluOJF1By/K/v7UVhrM2ek/PMTl39JXdmfmefUFnutibTeHzMD68r+jL/KV7ReVXnMb0ZneP0JFAFJ1l41wQenP/6CksW8G6YHYTOfeLF9v71m+P5QJ2Vt+uNu+367PjfJNs1fUWj2Q7vtW+x7/nFQ/wn1DTHW70/GUvg0AAAAAElFTkSuQmCC" alt="QR الأرصفة الزرقاء">
+      </a>
+      <div class="card-hint">فيلم مغربي</div>
+    </div>
+    <div class="card" data-name="طيف" data-type="مسلسل" data-country="السعودية">
+      <div class="card-num">71</div>
+      <div class="card-name">طيف</div>
+      <div class="card-meta">مسلسل · السعودية</div>
+      <a href="pages/071.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB9UlEQVR4nO1ay27DMAwjh/z/L3MHUrH7GNCTrWJ2WjSpCYQQZJliQuGD8fMJ6KAO6mVcAH0mENB0oTHTlf2WeEEAQECOnUARAHXPdGW/J16JlYdDVcmVma7s96IcIZHL7vjtKEpTqq2447ehLqAiRAGAmAIm3jNt2a9HQZVOenMUpCv79ShqPmfKvEBomurKfguKAEHCB+SUUy738WqNkpWq1QSjvUpStGe/DgVJjxti1S3/Cjr16wlFB8VaQhSgBEupb53Zr0VBlWCqj/PL4RN09scnFBMo99hRYEo/qX28WqKcR8ha1F20hiqDTn49oeROSPTOCIhUxXAjr6YoQe6yHaqpO1IkWGf2a1FXnThgjPdV7qEo8viFDyiLewoQq25ZSFAxXBuzX4yikG3R3WMtxrgUx594RbnJdiOUrlGY7JzjRz+i5OXnZPKXYy3y9I/ziIMjjqce1OTn29fpyn5X/bIC4217eZN0EKm+7Lfoe5Rpn75xWBSw/D/6fozJRM3j2qSWpq2zLfsterWeYotVxUrk3xHryn6Pvk+lj2KNyM8CdQHryn4Tisx7AKgwEfTfPH70XyjaxSe9CdDmDnXW43vUUPSW9+QtXr+A/SLU9HwbLvAWYRFfWZ5d2W/T9xh7IsaLX7es6Mp+q/5adMeD+k+oX3zYFv/JfydnAAAAAElFTkSuQmCC" alt="QR طيف">
+      </a>
+      <div class="card-hint">مسلسل سعودي</div>
+    </div>
+    <div class="card" data-name="سيداتي آنساتي" data-type="مسلسل" data-country="تونس">
+      <div class="card-num">72</div>
+      <div class="card-name">سيداتي آنساتي</div>
+      <div class="card-meta">مسلسل · تونس</div>
+      <a href="pages/072.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB8ElEQVR4nO2Z0W7sMAhEZ67y/798+gDE8d5W6lOMVFip8TYjLUKAZ8DoF/bvN6BBDep/oxIMISCfEusNXb1/H3VJQpIsCSMk53O96er9IZRtSZIjajLOc75p7f0pFBU0Irv4FvW+X11RBslW5BlyE79aoS6pMglLVKCQHznW1fvj9+PHpyBdvX8fZfYvziuR7U1X78/kV6XYHSAEQcGi8U9+3XZFz3LwrmeGFfli+NfTIpE+etZ6BqSr90dQRsI4M4tiYiTFoLX3J1DB6EEhiyKCmV1MPW4WsppQ2iG1qcKMfzH1uKz0dlSgffctY5wSqa33Z/qXbENekjLyfZJmPvGJwkiRWaGEQhJF3DT9/hMV6noVYpKuJ79o7P0RFMI2mVjJVC0ZTz3uBnVDSrckyon08NXvUEFUnUESgFM81ly6sfcvoy5Jax7h7PWYdT7iV1dUxIua3ddQWibmhxGxrt6f00NGUYab4iaZWGvvX0VdSl5aXD5Ya+2IMuG6en9m/qWS1mvzaJQjsdmnbXap9kC1qE3SFX80/X635347VmmqaqxrYPTQwy5pDZ+D4KfuvtWk5378EeU1Xy2CP/3+adc63lMJrYh59PZuj/12BChrM5ZGdRl09f4Q/4pjti1s1j05+nG3bb/9yi8O6i+hvgDYwxz7zJQ1aAAAAABJRU5ErkJggg==" alt="QR سيداتي آنساتي">
+      </a>
+      <div class="card-hint">مسلسل تونسي</div>
+    </div>
+    <div class="card" data-name="نوارة" data-type="فيلم" data-country="مصر">
+      <div class="card-num">73</div>
+      <div class="card-name">نوارة</div>
+      <div class="card-meta">فيلم · مصر</div>
+      <a href="pages/073.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB8ElEQVR4nO2awW7DMAxD+Yb+/y9zB0pOml16qgXMOhRpTKCEYMkUXawP4ucT0EEd1J94SeTJQpYwpp97ZSr7LfmSJQlhMJI6XWtlLPs9+RLJDKo8JWl4rUxlvylfHUYWvaluJ8FU9ltRNko9IskwhNco1EtaOwlD+n1V41qZyn5Pvmoj5WS8dhXulbHsv4/Ct8erfb2vjGW/BZVNhNLBRF5gQAJ28ZqKMgicXi9HuSJsC8lHfz1Rrbn6A8t1QKZAR7P/Kgr3WUgmovV8G4fGst/W74n2SsYk42sq4syPV0Tf4+pbds9GdVKyiddkFAjS4itzePkVpx7fw5Yt2crZuL5eL+2p7LfpidXcVyEqBpj38RqJKtNGj1OxTMOuyans96Asu4S8pCpDYofp+IVvccktYkbndVuFxy98RJsQpbpwS7II2RL4U9lvq0fJjp1D9MXNLzx64olKnkgnQ44znWZ//Im/KMqMFhLp9oZSYcefuAfLs0ksVd+t35z7x1u8+avd4TuLfas2lv2eeWg92CXGWuD3STCV/R5/4nHhiF0Vuv4SMJX9Jj/nut/OgF0Za396LvvdqKhWmbINpdze7uY1E9VliGRihB1/4hH3+22ZEqnOXaR0/IlH3O+383nNjVoj5VT2W/XXl37xoP4T6hfSMfo7VCd0IQAAAABJRU5ErkJggg==" alt="QR نوارة">
+      </a>
+      <div class="card-hint">فيلم مصري</div>
+    </div>
+    <div class="card" data-name="اشتباك" data-type="فيلم" data-country="مصر">
+      <div class="card-num">74</div>
+      <div class="card-name">اشتباك</div>
+      <div class="card-meta">فيلم · مصر</div>
+      <a href="pages/074.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB/ElEQVR4nO2a0W5DMQhDfab+/y97D0CSrZ3Up4K08FDdNpZqIRKMc7HeiK93QBd1UU/xkIgnC1nCmHqulansW/IlSxJCwkjC+VArY9n35EtEZkyUVWROeK1MZd+UrwyMJaKo8NEJprJvzVdUlvPDUWpdvKaiHpIqMdgCY7LU1spU9j35yjYYnZG1hGtlLPvPo/DxiLx/4J5fr1FRREiySWEhYUACunhNRRkE1pJcFkLYFpKv/vqNsjIzUVnCcn6LDTqa/UdRWHlyERMRS1bscWgs+6b5MeVWZKz2IE4Jxp0fdzwUQ3ZsPOycgHIeyhqbyr4HlW3QOTfmTJQexd2Pv1EYya6a2jtStz++QuURT+qwJVlrkuziNRJVQ091xTK+wjSsPTmVfZc/EUmrASj35Dryb3/c8VDq1Bi1y1ANjb/SOJV9j57YXn24rJG0mIpCZ0xl39Qf18GeRz6ihiPd+npGrWFx3QwZOR6vP/Ejyo/e8it3I3Ikznc/HpEFtVzVperLaTX3/vGI01/Vvqh13qSljz+VfZM/ISkmIpfGX1pf1/96Qtn22R7DY5X2KwGT2X8Wdd5vrwsPotb2KwFT2TejyLcCDNpq//oTf6DqAAsr36H2B/CahDrvt2VSpBovxX/74xnn/XZ8pqeTs3YIiqnsW/XXh/7xov4T6hstqOlr1RWyyQAAAABJRU5ErkJggg==" alt="QR اشتباك">
+      </a>
+      <div class="card-hint">فيلم مصري</div>
+    </div>
+    <div class="card" data-name="يوم الدين" data-type="فيلم" data-country="مصر">
+      <div class="card-num">75</div>
+      <div class="card-name">يوم الدين</div>
+      <div class="card-meta">فيلم · مصر</div>
+      <a href="pages/075.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB80lEQVR4nO2Z227kMAxDDxf5/19mH3SJM7sL9ClWUQvTgSchUEKwJYqW+Ub8+Q7ooA7qr7hAsTLIIMsywsubqey35AsDCGFZgEws6s1Y9nvyhTIzxLZC8XG/mcp+U74qVIdyTeEeXj8AZWMESIClIbxGoS64D6OV9R45tpl38ZqKuug2GJ3x3lVyvRnL/n2UvCzl5YFO/fo3KjZR1yzFA1kSSNrFayQqRIOrM8YnKlkqC+vo1Q9UNcb6knE2yMjfaPavomRWQU/0xZatACdfS1x0ukxIL0EIi3p2zuMT5TiAQrIBu0aiU+8/I/RXlXcLk/Xeiu11zuMHKg6ekUwU/jyR8cPHn3iifLdGSlRAGGI5EA1m/zIqTRuqK5bxFaZh+oZj2e+q97aisFP1PmR+7bzJ7N9F5VDdZnSey7IKj1/4EXUegbSj08kpDeujv9a4HsNijd6Wb2Pn6IklasaumTuz1ea9Tr4esdx3uHJFClZcjXIq+/dR0QzvPxts22VFG+yp7Df5E7msgl990uW5jmW/p97HylHDgDZ3yuwZy36TXrXd2ywlfU3a2shrIupxv111X3ZfQHoPrx+Daiunk3jmof+gqloJLLm75m5ek1Dr/Xbr1WiU/Wsu+z35qvvtlhKuWTvl6lj2W/XXS//xoH4T6guUNutTmC5iSQAAAABJRU5ErkJggg==" alt="QR يوم الدين">
+      </a>
+      <div class="card-hint">فيلم مصري</div>
+    </div>
+    <div class="card" data-name="الفيل الأزرق" data-type="فيلم" data-country="مصر">
+      <div class="card-num">76</div>
+      <div class="card-name">الفيل الأزرق</div>
+      <div class="card-meta">فيلم · مصر</div>
+      <a href="pages/076.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB9UlEQVR4nO2Zy27DMAwEZ4v8/y9PD6QsO0WBniIBFXOJ4wWyIPhYrSJ/iK+/gA7qoH7EC1LfhAgxRoK3N7uyX5IvBAiRGCDecgjZl/2afJHODFVWBLCqrd7syn5Rvm5RaYLE2ybYlf1S1Gg+EsBkE15boV4wm1FIjCFWmbmK166oF9carM04q2qO/W3ZL8nXu2K1PnG+2ZX9ElQVUe1EIPVDTAJJVvHaElWiwXQtxSFaGcrCHL36hhLJrCxSDTll2NbsP4qK1KTvtqy9OGUrcPJ1ixeUMq0GTLoHIXaXnn58ouqg3XJewDoIVXOeef8DFUwtw6EiIrRHcfrxHZWqKR1ZGh1ZDx5/4oky13JMhqKg+rRlxsbsP4xq06al6nDAaNNw9OSu7NegRFITDFPzvusNjl/4iGkKXkY0dC/2/FrCa2eU1OQCg6K2Khs525n9x1GJRB2rsXI3/cKjJ95Qch0W7QlfhRbk6NVHzPuOXDuSMiisxB1/4hFKn4LoAkP1MgsF3ZX9In+ivzIvar0tzSW8dkVxXZsp3YKjthzPp74eqOo/RkvWwO/nLOS1I+p5v90+dLxWZr3Ylf1iVIxY2ms4+OTo1V9Q9ngPmL5OO/7EM+7321yOhBk3RsefeMb9fpuRMce5seXqtuyX6q8P/eNB/SfUNxSh+jqPBtHlAAAAAElFTkSuQmCC" alt="QR الفيل الأزرق">
+      </a>
+      <div class="card-hint">فيلم مصري</div>
+    </div>
+    <div class="card" data-name="نسل الأغراب" data-type="مسلسل" data-country="مصر">
+      <div class="card-num">77</div>
+      <div class="card-name">نسل الأغراب</div>
+      <div class="card-meta">مسلسل · مصر</div>
+      <a href="pages/077.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB9UlEQVR4nO1a2W7DMAwjh/7/L3MPlHysxdCHwVIxO0Wag0AIQaElOhTeGF/vgC7qop7GA6CPBBAaJ4Tmna7sS+IFAQBHuASKEqlxpyv7IhRJIOKWIfKIO63Zl6EYucVfUX/5xA9HKX/HnvhxqAeQEaJAQXSSpZYV8eqKgjKd9GJLSFf251HUj+NQfkLLra7sS1AECBLeIKec4rSOV2uURAD0nnDtRcC77uzPoSBpnxNTt/wv6OrXjiIVYRNk2VIES6FvjdkfRkERG+eTpSuvR9xufm0oa5WYc6UIQXQHrjpeLVG0LWFZV7Tc4vQmCPVlX4RybuUUCcDmhIb4t2Z/HCWKlnmfABhxw/UntjH6x2gX5RLMZqEDyesXbiiCdD7NFsiFhNvvKl4tUQ8AdnHCk3Bhr8yuq19PKGWKgZRIz5fTzrl+9CuURClCBc53kbd/XEdUWi6zkCI/G0r7Ol3ZV9WrsPNl5Ur9iiDy1qs7yu8hs9qa6x2MfGvN/jxq+hGA+yLCl6TIvcbsD6OW9W2NVY4sxEZz2ZV9Tf0VSm/JkrtJhrFjAevKvqheJUYZMa17T5xW/q7sq+p7AMvykOITCjBNsa7sS1Gi50qkfRjv5J0fl7Gsb8dBmIZifhtw9X4d6/p2Lj0u8XNZ0ZV9TX1/9okX9Z9Q30UOFBA4PBfjAAAAAElFTkSuQmCC" alt="QR نسل الأغراب">
+      </a>
+      <div class="card-hint">مسلسل مصري</div>
+    </div>
+    <div class="card" data-name="القاهرة كابول" data-type="مسلسل" data-country="مصر">
+      <div class="card-num">78</div>
+      <div class="card-name">القاهرة كابول</div>
+      <div class="card-meta">مسلسل · مصر</div>
+      <a href="pages/078.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB/0lEQVR4nO2a22oDMQxEz5T9/1+ePkiyTdpCnmyF2pBkkx3oIHQZzVbmjfP1DuiiLurHeUBxZZBBllXXdacr+yPxwgBCtixARjbzTlv2Z+KFMjIgHN/lyjAf4dUV9SzXAiJMoMywU7w+AGVjBEiApSa8WqEemMVoZb8nev6405X9mXhlIsVknFkl15227Pej5OVS4PGDbv/6HRVJJMAxHAUgSwJJp3h1RVlCMlGKBqOQY0bgq79eUY6oxGBEyDgHZOiL1uy3olQ5lI0++teQrQA3XssJPRHhcmRY1qDsDNvdH+d5smOlVK241T6UOdaV/RmUlGMw9sY0J5xVeevxBRWF52jzZlYkdz7+hnJORSLTauPG1fdbs9+MyqUnjS6TC1GYhqqa7Mr+TH6BkaaDM2V+ZV5j9ptRz+jyqtFYPtiSe13Zn8mvUPPkSmRsE460suc3Zr8fFUrCswQltPiFN7+Wk350KPzq+sKyUUTtxms55a+6HqilfW/h2MN996H12DkQ4xVfbZcVbbC7sj+iv8blnJHpWlA+flf2p/QEZKKl1zo+860r+zP9q0RXNfwRufEvAV3ZH0KptEMYqxE4x8++9fgnyqlZrWEghoX4Eey3o8qVFlhhhF1/4uWsz7cZjoS1qNcjvLqi1ufbVMRce2PK1bbsj+qvTX/xov4T6hvnde9dFiME6AAAAABJRU5ErkJggg==" alt="QR القاهرة كابول">
+      </a>
+      <div class="card-hint">مسلسل مصري</div>
+    </div>
+    <div class="card" data-name="النهاية" data-type="مسلسل" data-country="مصر">
+      <div class="card-num">79</div>
+      <div class="card-name">النهاية</div>
+      <div class="card-meta">مسلسل · مصر</div>
+      <a href="pages/079.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB9UlEQVR4nO2Z0YpjMQxDj5b+/y9rH2TfZDoMzFNjmLilTW8EFcZRFEfmF/HvN6CLuqhv8QJlZIRBlmWQt5mp7I/kCwMIWbIAGdmsmbHsz+QLJTMiJVaDqjAf4TUV9dp/WBh1UW07wVT2R1E2ZD0KsDSE1yjUC55KklvvieY/M1PZn8lXFVJ2xlVVcs+MZX8kX++O1XnJa2Yq+yOoFFE0C1AeyJJA0ileI1ExDS6rWm/kZTGs61ffULUxll4JZUEKyl+MZv9RVETdKN4rLnXZVoCbrz1s4xZ918jY+WEbeyr7M6hkh5KwZE1VXlfvv6OEpKzDchHy06+46/Edlc2w2jiuynKJfUaD2X8e5S4tsNpRkOVZujaY/YdRW9MG1T4JpNrUa3Iq+0PrEaMIO633sfnlxyaz/zAq/a/ue6nlC8e2ZjiW/bnzdk6Oy7EmWWVlx7I/d962rVYyCW39wltfeyx7v0x9BnkGvv5+Rffvl3jVahRJpG5/Yg89njTxuPrutFr3/nELre5qpF6r1Kqbf4TXVNR2v211nen5ro+p7A/1J7zEvRdkn7R1kNdYVHl7VTunMyapzP5o9gdRdaNmCT+nynse+gFlrfO36jrt9ie+xn6/TffwSZUBtz/xFvv99uNa12VRdRGnsj/qvz70jxf1l1D/ASZi/zpFPHDeAAAAAElFTkSuQmCC" alt="QR النهاية">
+      </a>
+      <div class="card-hint">مسلسل مصري</div>
+    </div>
+    <div class="card" data-name="حق عرب" data-type="مسلسل" data-country="السعودية">
+      <div class="card-num">80</div>
+      <div class="card-name">حق عرب</div>
+      <div class="card-meta">مسلسل · السعودية</div>
+      <a href="pages/080.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB9ElEQVR4nO2awW7EIAxEZ6r8/y+/HmwDSS97aXBVOCQsjJSRZeyxWaMPxtcnoIM6qB/jkhwzLIwsLCSZsdOW/RZ7CUlhJ0lhMWI1d9qy32MvOa1jZMK5pHqzhdcfQNnIOCaMc7qdV1+Uy0TpVr//xT+HuqRpmwhZxvkcO13Z77FXeRXGuCKZlp2u7N9HeZ676VXicSK7st+jv1DZ6fYjVpCP/nqgQnGlPrURCCEgckBr9q+jjJzCC6Q10EuI3uzfRZkSp2klr7tZF7Vl/z4qPOq5giQoj4Ou7Dflx6iDnFkxZD4OgXHqodu4MtqznMPMjthZUbZlvwUFlg1SzEemnGV3Y/ZbUAgbhUupCqOouo+eWEfo+3uWrN7hXO3KfpP+ElYcSI90WRL/6K8nyrIYXWjB7K+muTqz34HCzoNZBVBU3cbWiV9PFOFGEesNDhnm0dZpzf51VHRxwqvi1oOQY8PrOrPfgrKqUaiyXAb+MGBv9m+izBQSaNw8joZYrHVlv6UeqkRYDQrKXCi9rS37Tf2JmMSDXMuWYXQNu7LflB+BzJFZA01v49xv30d1u6Y+pWb1Ov41xzWn0fHKALb+oaIv+72ojFiyZWdLjBPvb2O9385Lj3QrVwbYwqszyrZdrenRkxg33CfeL2O5337piwf1n1DfGZkGJCqdleUAAAAASUVORK5CYII=" alt="QR حق عرب">
+      </a>
+      <div class="card-hint">مسلسل سعودي</div>
+    </div>
+    <div class="card" data-name="ثمانية" data-type="مسلسل" data-country="السعودية">
+      <div class="card-num">81</div>
+      <div class="card-name">ثمانية</div>
+      <div class="card-meta">مسلسل · السعودية</div>
+      <a href="pages/081.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB9UlEQVR4nO2awU4DMAxDn9H+/5fNIUlbBkg7LUE0SKxQS1hRmzguMi/Exyugi7qob/EAxcoIgyyr1rUzlX1LvjCAEMgCZBTXNHfGsu/JF8rMEMcKgbC8dqayb8pXhvNCwpnCHl5/AGVsBEiApSG8RqEesC+jlfU+v6+dqex78pUHKTqjzt36YSr7lnyditWA8+vYmcq+BRWHaNUsxS8kJJDUxWssSkJytkeHchU4yr+v/vqKMsZejREh42yQIV0Hs38zSnWGstBbIVhTtgLcfB2hUqiCnCEVWashEt35cUfp+8hZZos9Q6qJ12iUUDbCKF3Iy6+49/EZJZPNMLNUXZHbH39ChajXUvmHmZMnbDL7N6OiP5bRtQu/vpT8qeyb9BcWkpzpyk9l7u59PGLLrTxMKcPSAbt+4VM8TvkVI1EahjUVXf11xoNV4uv+hRe9jZ2rJ86wc8oOf9Vei3J0bE9l34QybPkV1d5S5vLqrzN2lfeeIGPjKGlT2Tf1x7VcD7XVGRV+xVT2Pf0xVvbydepsKSfvsex7+mM9OIoctr3mx+tPPMX5vu2yVjNjWdBaeE1Fne/b6/9NrDCow6S+9f4XVJ6vaJY6n9T+Avv3oM737ciScFg8h2cxlX3TPBTLUhDRHtPnCUExlX2r/nrTX7yo/4T6BJkV71KryTXlAAAAAElFTkSuQmCC" alt="QR ثمانية">
+      </a>
+      <div class="card-hint">مسلسل سعودي</div>
+    </div>
+    <div class="card" data-name="صيد الهوا" data-type="مسلسل" data-country="السعودية">
+      <div class="card-num">82</div>
+      <div class="card-name">صيد الهوا</div>
+      <div class="card-meta">مسلسل · السعودية</div>
+      <a href="pages/082.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB9UlEQVR4nO2awU4EMQxD/dD+/y+bQ5JOBxaJ0ySIFgmVrSUsq0mcdLF+sT5+Azqog/q2XhKxs5AljKl9nUxl36KXLEkICyOp5FonY9n36CVSGaVOca/wOpnKvkmvXEiyiEuFt0owlX0rys6UBZIMQ3iNQr2kKxhtgTGR9a+Tqex79MqLFJWR/bT+mMq+Ra+vjtX5s51MZd+Cymqoy1hIEggkoIvXWBQInLfJ4VyJ/I/k47/uKMuy110K5+oskOEvBrN/GIXLk0ZYmthfn+jota2tHzKyUMUgdsp2+scbqnpG2aFd+tZM+yffv0ER3WKmrlBva7qHs38WhSHuVKpUEalTH9+hMsUT2lAddwzA3MdrJCrqY8rCqoo5NKyYnMq+yX/Jcb+y/3HItlL+aPYPo3KoGoPozFjKWNTyZlPZt80nSiWc6SxikfxsKvseVDREXhEIYpsXHj+xLzsTWO4tOTY10bE9lX1PPMqV6lGN703MwKJQTmXf5CeWL91cfU1azXl/3Bbet1kjr6kFkf2nsm+JxxrbWPmyve4WOZ4Yy76pPtouZ082QdVp08hrImp/3zaVzez1AOkeXn8BdSV4kOtLApx+6AeUJepLE/UAcuYT97W/b0crhCxTluzMJ+5rf9+O394777CrY9m3+q+H/uNB/SfUJw5J6FbasT8xAAAAAElFTkSuQmCC" alt="QR صيد الهوا">
+      </a>
+      <div class="card-hint">مسلسل سعودي</div>
+    </div>
+    <div class="card" data-name="كيف لا" data-type="مسلسل" data-country="السعودية">
+      <div class="card-num">83</div>
+      <div class="card-name">كيف لا</div>
+      <div class="card-meta">مسلسل · السعودية</div>
+      <a href="pages/083.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB+UlEQVR4nO2a0U5DMQxDbbT//+XDQ5K2GyDthTaIVmLbpZZmRY3jpDN6Y328A7qoi/qyHpLjExZGFhaSzNhpy/5IvIQkWRGfiBiGudOW/Zl4yaoTJRMf46l2urI/ijKSsGQjXNl4nFdblEeE8lj9+jf+PdRDmrHBAhkrXsdOV/Zn4lXHCuPKyghU7XRlvx/lmXcupY8iuWZkV/Zn/BfK7MsozQdJyNd/vaDCqRJZaCMQQkAUgdbst6OMUrcEYSlmMiJ6s9+LMpGFoxx63S0X25X9Kb0PkR/toplCdvXreQGpV4r3oV6ZiwBd2R+JV75G4Oo5/jJ8N14rCoTLoGKhMckp5W/M/hCKbB5nG5RJef3E00q9p0xYmtScgdUJ68r+kP+KWkgNvWbJ9PVf36Gs4SYMRLsdgsbVr1fUPFkI2dYwZDjGho3Zb0aNeQ71VsfNIl1/X/aH9N4h7nndMXRe+dyX/SmU8/YMKRLQ0XlH1ezOfifqUZbBc0po5XVH/a8t+yPxqkIYshU3j6PjjsTsyv7Y+VIpFcOOZZJy9esVBcCwqax33ZmendnvRS3320tJTO+q6pe6sj8Ur1gxpKifTmRlvPOJn1GUHbPscP0Zs7/Afg9qvd929tc1nR6Tw7bsD80nbEcHCRWzCqKv3j+t5X570zde1H9CfQL/cP4qFUkydgAAAABJRU5ErkJggg==" alt="QR كيف لا">
+      </a>
+      <div class="card-hint">مسلسل سعودي</div>
+    </div>
+    <div class="card" data-name="منصور" data-type="مسلسل" data-country="السعودية">
+      <div class="card-num">84</div>
+      <div class="card-name">منصور</div>
+      <div class="card-meta">مسلسل · السعودية</div>
+      <a href="pages/084.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB+0lEQVR4nO2aQW5jMQxDHwe5/5U5C0qO006Brr4FjN0u3JhACEGmKLkyv1h/fgO6qIv6tl6g7AwyyLKM8HYylf2ReGEAIZAFyLXpk7Hsz8QLJTJW0iqRS7blZCr7Q/GqJasuJUjeKsFU9kfjZXDJ1toe4zUaZbdQeSVZ0qxORrN/FPVilcFURu2n/cdU9kfitelUFcX8bCdT2R9BJYnEbixAQgJJp3iNRUlIxqxfoWiXwNd/faJc5bByCSFjrKScPJr9wyiVf5CFEamLy7YC3Hhtq1vFd4gscOx9fXb7xw9UVN7phgw4jVDJ/tX77yitohjdV6l+POt09k+iXjWU8LL0qqpYIcP3Pn6iYumVCtmDCVid5CleI1HJpgrLNvjSh+RPZX9K740klV2N6Ost+aPZP4x6DwUjY9twuvXrCK+pqJp/5Rq6rGs+qa7o+q8vqJ50dcTiLtIOwfUT/0K5e0d7TVcr265f/YZyND4FMWpvCZy+ezj7R1FlGVrml4NoY5E5/lT2Z+pjb3FZ/fb4a44/lf2Zfig7pyXKg23NXGs8MZb9GZTt9djYF7I7bR3kNRG1v2/nSlKaX4bivqf9iBI2dryXO4i69fEHVM+gBa5B2J1PfFkveL8zrimh1f8OcOcTn2t/315Wwt1r11xnLPuj/uuhb7yo/wn1F9pN7lgbKknFAAAAAElFTkSuQmCC" alt="QR منصور">
+      </a>
+      <div class="card-hint">مسلسل سعودي</div>
+    </div>
+    <div class="card" data-name="مكتوب" data-type="فيلم" data-country="الجزائر">
+      <div class="card-num">85</div>
+      <div class="card-name">مكتوب</div>
+      <div class="card-meta">فيلم · الجزائر</div>
+      <a href="pages/085.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB9ElEQVR4nO1ay44DMQyCVf//l9kDOJM+Dj2NvdqkVZU2SEWWnWAyFL4YP9+ADuqg3sYDoGcCIYCiWPNamcq+JV4QABCEKAKg4EmtjGXfEy8wkYHTCvRba2Uq+6Z41UhBeortJJjKvhWlpBZIACKH8BqFegBXMYr0fp/PtTKVfU+8kkg+Gbmv1pep7Fvi9apYlde2MpV9C8pJtKqP/oEECZDs4jUWRYJUsklWrgQkgYCO/npGCXJUkmoEBeWAFKjR7G9GWZSKCRhEq4rSFgBOvLYRPaEELdJeBCglbKd/fEdRoOQtX6qW6Oz3H1H0npWmMT1RPIpTj68oF55F/VNF4pyPn1A+CO3f0IUJADbA1MdrJGozbZ6ML5uGVZNT2TfVIwSSy5CIUbG2/NHsb0axhJaolW2pxexfLbymoqJXV/vIKNZVmzr66wXlxCrNJfeTm1949MQ7SqQiVZl2MtOjVz+i3PyQzjRbrZD77vns70PFXy2FWpnlFPM50MJrKoqXu+qtvu6IfDLSu/9U9vejLLZq4sS6rMN811T2PfVYF46olrv8w/VIwFT2Tf5XVOllgjli1yMBU9n3orikBO23Kr/+Cfb3owSw+u+6ADn+xPPY77fTQ0J+UCfb2jkf97Hfb/vz6htRvs5Y9q3666Z/PKj/hPoFYBvkXn+Ao9IAAAAASUVORK5CYII=" alt="QR مكتوب">
+      </a>
+      <div class="card-hint">فيلم جزائري</div>
+    </div>
+    <div class="card" data-name="عنتر بن جلول" data-type="مسلسل" data-country="الجزائر">
+      <div class="card-num">86</div>
+      <div class="card-name">عنتر بن جلول</div>
+      <div class="card-meta">مسلسل · الجزائر</div>
+      <a href="pages/086.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB7UlEQVR4nO2ZwY7DMAhE36zy/788ewBsp9tDTzHVml6SeKSOEOABZD6wn09AB3VQf+wCxZMRBllWPddJV/Zb/IUBhCxZgDw9Bagv+z3+QukZIqwQYORx0pX9Jn8tFm4CyctN0JX9VpSjhoEEWGrCqxXqgpmMxpJlRdWfJ13Z7/FXBlLcjFpP66Ur+y3+WhWrAedvOenKfgsqgmjULMUHCQkk7eLVFiUhGStKPg6f2Ubgo7/uKOPwSspUIeO8IENfNGb/MCpEaYlUsOJ5fuH4a7GLEqiQEZY5KDvddvrHGyp7RmMkA45GKMv+qfdvUFHxo1o5Qi5nFCcfX1EzpqxbRnLux3coa5FdqDpuxk3Qmv3DqGVogzDZEOXQsHKyK/vnUbian3ypTzDUq92V/S6UsmtU1DFVPasZRW/2T6JCnnpK06HHMjd99NdqVxZ13y5FZ2gBJ75uFmEUPhpVX3N4r+Ovm9X8foy7KhtVfbhPPq7m8pTHq22PO9Oc+3ExzemqcFb43EDm9nYLr66oZb9t4dL4Q+tz5l9/UJF/YR73Zb3s49URte63rdEHeSwgvYfXN6CEo4RZKiURav8b2D+PcozuQ3dpXal9A/tnUOt+O7w0oww484kXW/fbQ0rMZVHUs7bst+qvh/7xoP4T6hfcY/g6T7ze/QAAAABJRU5ErkJggg==" alt="QR عنتر بن جلول">
+      </a>
+      <div class="card-hint">مسلسل جزائري</div>
+    </div>
+    <div class="card" data-name="في بيتنا رجل" data-type="فيلم" data-country="مصر">
+      <div class="card-num">87</div>
+      <div class="card-name">في بيتنا رجل</div>
+      <div class="card-meta">فيلم · مصر</div>
+      <a href="pages/087.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB8klEQVR4nO2awW7DMAxDyaH//8tvB0mO0xVDD4OtYvaGIK0JhBAkmWJq9Mb6egd0UAf1Yz0kxx2yxPSBa6cr+y3xElJGDUtCxmAzdrqy34SyI1rj4trOndbst6GcueVfUX/5xA9HYZEZtuiJH4d6SBUhRz06kmyqzr7s16NEpRMv/grSlf16lLndm+z8vtVlV/ZbUJYsOy4SkXJgj3OyMfv1qGhU2estyc60c10as9+BsiqVRjU6CtJRoa3Zr0bFUQgYIYwE+V0mWmP2i1GCPArHfxXoiNs5H28oSzJYcnR6C5H1yD5eLVEmC9JRicYSvrwJi77sN6GwDMLOjApzApVobc1+OQoRUzZklmnETcefeIUiRIREKXxs46zM5uxXoxwK1RWs8HUkk4Zra/bLUelIlLynUi0OSU6/f0LNs0/EaoQudzqz34IKXZqtHvmqRZ/58QllI5VF6DgTU7nWsNSY/WLU0KsqQT9Ua2pVn/41Ly5hmnPjUKnxkTM/3lGXH6HqWco4ls/amP1i1PR+m8sGy84/irUr+016AsjIVJcvG19w/MIfKHuIrXEsOmX/8aNv63HdOqbrSLOYHEknvyv7ragahpTyPnTZmbdva3q/nXeEZr1+G3D6/bRmJ7WmxfFVGK0nXtOa32+veeJB/SfUN/FUDBr9oRJXAAAAAElFTkSuQmCC" alt="QR في بيتنا رجل">
+      </a>
+      <div class="card-hint">فيلم مصري</div>
+    </div>
+    <div class="card" data-name="إسكندرية ليه" data-type="فيلم" data-country="مصر">
+      <div class="card-num">88</div>
+      <div class="card-name">إسكندرية ليه</div>
+      <div class="card-meta">فيلم · مصر</div>
+      <a href="pages/088.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB90lEQVR4nO1ZQW7DMAwjh/z/y9yBlOO0PfRka5hdoAlqAiUESaZoCl+sn29AB3VQb+sC6DcREEBRFEDdO23Zb4kXBAAEBKpC5h9rpyv7TSjSmUQQDhvp9+y0Zr8LpQqanF36iFrPqyuKgkDCeabqXtt5tUJdQGVS8ktVlPdOW/Z74pVEogiIfvq7Uqwr+/UoznqVEHMk6rHVlf16FCQogRnxESRlD4DUlf2uehRzIlLgLcdqry37Lfklf9UHwPQ0pCv7LShPPmIyS3VSCqAEqDX7DSiKlg9MpOgoOXynHh9LLkhU23f/L4XvWj31ONYFwKWHxwEZn4K7eDVGESIlkSABCvRxGQF26vGJspxndSxlGGKGydPvX1CerhUjBxyC7NYXjdlvQSlOl+3CKFXeQ2Rv9itRFyBa3nPW9HEpMnN3Zb8JFberpkWJsrAoX7o1+6UoKj5O3hM55oETr+ey/kqrB3WbYYkWz/3QG0ogRZfhY+JWlFhr9ktRcw0CTig3/bKnefJrWtcQqfBJqbmVVdS6st8yb9dLTNXyJVCK9czb05rvt1neV7q/xSvPPDStCxjmc0UrHawsC57+9Rk1JqJKLpXR8xfYL0dJyLR9R+z4Xy9rut+23KrajDfNTby6oub7bWeYGOU6en5f9lv06uJ/PKj/hPoFGwYJJYIMtcUAAAAASUVORK5CYII=" alt="QR إسكندرية ليه">
+      </a>
+      <div class="card-hint">فيلم مصري</div>
+    </div>
+    <div class="card" data-name="سرقات صيفية" data-type="فيلم" data-country="تونس">
+      <div class="card-num">89</div>
+      <div class="card-name">سرقات صيفية</div>
+      <div class="card-meta">فيلم · تونس</div>
+      <a href="pages/089.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB7UlEQVR4nO2Z3WpEMQiEvyn7/q88vVCz2T/Yq6OlSaEkJwM7iNFRZb5YP9+ADuqgXtYNFDuDDLKs2tfNVPYt9sIAQkYWxMbcb8ay77EXCssItG3Sw9zCayrqth8sjMqptkwwlX2rvUxaSzht18drKuoGy5NkMt7n/3UzlX2PvTINRmbUfluHqexb7LUrVgPOv+1mKvsWVDhRvD6B4oOEBJK6eI1FSUhOb4qoj8A2Ah/99YiK17d5FjLGSpfzaPYXo0LUW6m9QqXeZSvAsde2qmRMgZrvzzJyme3Uj6+oUvUG7CyJOPH+A0ooonvEfWXUr6J7OPtrUbLSp7wCP1764uTHJ5S3h5cJAMhw5j5eI1HVFnQesiCKpuEK+VPZN/ULIz2uVWLMVYGPZd/mX89N6GoVnn7hG5QpAWFJxhX8l80ms78cFS37FeOjnsxyKL8NZn8xagUpyGJRpe6X2J/LvgmV+isFa3ZZ46OP/npc3huDDrvZrvYOBnsq+578WFuiHR15sjY6+fFh2dvG4U6rdZjn419rbfPtNaq1V/2YOnYq+x57reGsMh+mxUq5zmXfi1LlQ6ssB+jkxw8ox9wjdJf2kdpfYH8Nap9v12zIkSi3jutU9j32qvk2pfBddWPV4VPZt+qvi37xoP4T6hf6EPg5pe7PwgAAAABJRU5ErkJggg==" alt="QR سرقات صيفية">
+      </a>
+      <div class="card-hint">فيلم تونسي</div>
+    </div>
+    <div class="card" data-name="جبل بابا عمرو" data-type="فيلم" data-country="لبنان">
+      <div class="card-num">90</div>
+      <div class="card-name">جبل بابا عمرو</div>
+      <div class="card-meta">فيلم · لبنان</div>
+      <a href="pages/090.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB/UlEQVR4nO2ay25EMQhDfar5/192F0CSvqSuLlRNZpNOLNVCBIwzWL9Yb78BXdRFfVkvidhZyBLG1L5OprJviZcsSQgJIwmLuKZ5MpZ9T7xERkaRVhE54XUylX1TvHIZqVILfHSCqexbUY4aJoEkwxBeo1AvaV9Gy2CMcKSZu3hNRb202mB0xp1VuE7Gsm+J11GnsCTn5ziZyr4FFUmEsnwRX4BAArp4TUUZBJaJki9HzGyL6JqD2Teg7IhKphrCcjbI0BeT2T+LCr26Arb2zoDRxGsqaumJGoRUdxA71f6dH/fKecg1/zgnoJohb359RSEjZIFxmBTLr5Bu/fqICtFlqCjVjdTtj9+hnFaOYnuaOZlhk9k/jErTJkv+qlhpGtadnMq+C2UrrmPcxQgbS48NZ/8kapuCqz1KeRezfrXwmopKvzATyWzDsKaiq78+oaJg+Zi4EYdfePXEsbYutYj02uK1LOqx7Pv0/RapeRsJDywa5VT2z6PCnChz0Pmn7TILLdlT2ff0x72t8RGvpsntj+c63rfTyGHLCnLyHsu+p36VTs3ph+Ufrp8ETGXfVu+zemGiUXo9QLqH119AIcl2aK8ywsSdh35AOZ6EQndxPqn9BfbPoM73bS1HwriK2Z0fP6zzfTumoqUq4lcUvv3xXIf+eug/XtR/Qr0DKW7tYIkgS24AAAAASUVORK5CYII=" alt="QR جبل بابا عمرو">
+      </a>
+      <div class="card-hint">فيلم لبناني</div>
+    </div>
+    <div class="card" data-name="بيروت الغربية" data-type="فيلم" data-country="لبنان">
+      <div class="card-num">91</div>
+      <div class="card-name">بيروت الغربية</div>
+      <div class="card-meta">فيلم · لبنان</div>
+      <a href="pages/091.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB6UlEQVR4nO2asW7EMAxDH4v8/y+zgyTbSTvcFKuolSG5mMARAi3TcmQ+iK9PQAd1UD/DJTBjbOcdPEfclf37qAswgECWcdwjVzXSlf0mlCQACwFGlkBzpDX7XSiXnGyM8K+o93l1RQlsCRDCqAmvVqgLskxhYZGJMvIYact++/r4uArSlf37KPn+Q1XDbkNd2e/RV0lsKMppvhxvjr5mXFW3UlBTYWO1PP5rDbtUtNSseQ9IV/YbUS5FOZ4JxRn8B9i/idJMUZj6nJiZvjMfHygrdoxlvLBlgWSQjr6eqCjsmprK4h9p28erKUoQDQlVokJUZcDOfLyjLET0ISiRqfLGqfdPVOyuXYpSmq7VXzRm/zIqPHz2UsdtOosw+13Z7/GruemB0Y/IjvTxqz9CMQ3jWl7UqCzclv2W/WNUeo+yFesl1QrzFl5dURdgyYg47Sif79k8PPp6oGzJzvOOdcftdGKt2b+Kyok3evXjoKO8/alft7ig+vTyOIGMNHpkrSv7Pf4rH5g+gnJe4c2Onxixnm+bXCydujIInf3QEhcszWe7HFe+zg14V/Z7UUpTQYkrvqbYzqspKj4DyK7hmI77ebVCLefbkaWcm3nYnQnryn7z+uhqSSy9HJ/1cY3b+fYr/3hQ/wn1DeIzLc7sAxqHAAAAAElFTkSuQmCC" alt="QR بيروت الغربية">
+      </a>
+      <div class="card-hint">فيلم لبناني</div>
+    </div>
+    <div class="card" data-name="واجب" data-type="فيلم" data-country="فلسطين">
+      <div class="card-num">92</div>
+      <div class="card-name">واجب</div>
+      <div class="card-meta">فيلم · فلسطين</div>
+      <a href="pages/092.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB8ElEQVR4nO2awY4CMQxDn1f8/y97D0naMly4MC0i0cIOqiUsK02dFJk34u8dUKMa9RquBDPGdv4HzxWfyv5+1AMwgDCIeEQYuVaOZb9HL0SIZWRhhDWk8xZeX4AyEuTb3KfbeR2LmgqptuaHv/H7UA8ooRQZ5tqXc+VY9nv0qlSyjAWoMq1WTmV/P0q+fKjXZl4Ho8Qo80hWnY7Kv/YTF1SklAXEe8mkMmEns78d5ZFf4ShCuAJ0fl1RSq8KUvZDEDJKWJ1fSzziWAwXkZkWKSaHipaPZb8pvyRH/Yo0M9NJxGFwMPv7Uabyq1rvEEzYsrp/XCO1MdlqR4ed5SyGFFt4HY0yKISTPHekUfqyo9nfjpKQnRNDhKJ9jFmOez9eUGFJJVX7WFPC9vevoToMLVftCochl6M4l/2m+UTWL+UxqZQxD4D2qxeUlWVqOAq7RoaSez+u4ep+zKJarNQZ0PdDI+aoq0xYWtbZdHc/tMQoWxmjxI+JtGi9Ziyj1JCuJMs7Nm/idSpqvd9eLojMmOx0/Vrj6X47zFgOVfOq1t0PrbHcb+cTY64zS/6p7PeilEPD1C7bpP28DkVFAxRFPkaIVHn7AvY3oZb7bTN+bOJyEzG4OJb9pv4xHoWJubTnb5vcfvUpXq6yP/6Njfol1D91d/A2n2ezLQAAAABJRU5ErkJggg==" alt="QR واجب">
+      </a>
+      <div class="card-hint">فيلم فلسطيني</div>
+    </div>
+    <div class="card" data-name="كابتن أبو رائد" data-type="فيلم" data-country="الأردن">
+      <div class="card-num">93</div>
+      <div class="card-name">كابتن أبو رائد</div>
+      <div class="card-meta">فيلم · الأردن</div>
+      <a href="pages/093.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB8UlEQVR4nO2ZwW7jMAxE3yzy/7/89kBKdtwu0FOkYqUEhR0N0MGAIkdk5Afrz09AB3VQX9YLUk8ShBgznsfOruyX6IUAIRIDDLnmzrbs1+hFWhlapxItzp1d2S/Sq1eJE6/ndbx+AcoZWgFMNuG1FeoF12E0qXzfp3Hu7Mp+jV4dSFUZr6iKY2db9kv0uuWpANif286u7JegKojCzGABSEggySpeu6JMSOxospxrQCXg8V8PlJYqI7KI2AVS4t7sP4uK9SdWKFVdvGwrcPS6LwWtY1gvgGjvKLor+yV6lUhTMOlf+svR64GKZlTJyvtx9ivOeXyiYoJW6pIwqiKnPn6HKks/nH3sG3c1wFzHa0tUN2260zWrYjcNx5nclf0qlMPI19u0+e3HNmf/SVRfqn1ct0er8PQLv6IqnAKV8ttPxJtmG7P/MOrKUiNvVU2cpdE1vPZGadpMdIY32DKe/sR99bzDchFmtO9Ne/6YM0+71ouR8/vwVWS1drQ725X9ov7EfJyD2lEZu4+/K/sl8TUshMRo3rw+p//1tm7z7Wvu4bw/9m+7sl+W76vrlZ53tGL9toTXb0DFjiyTy3vl+NV/oEyVxIBjAHL6E+/rPt8esyGx/Bec/sRj3efbDIfvuDe2Xd2W/VL/9aH/eFD/E+ovtNcCQktYswQAAAAASUVORK5CYII=" alt="QR كابتن أبو رائد">
+      </a>
+      <div class="card-hint">فيلم أردني</div>
+    </div>
+    <div class="card" data-name="جن" data-type="مسلسل" data-country="الأردن">
+      <div class="card-num">94</div>
+      <div class="card-name">جن</div>
+      <div class="card-meta">مسلسل · الأردن</div>
+      <a href="pages/094.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB+0lEQVR4nO2awW7kMAxDH4v5/19mD5QSp91DT7GAtQp0MgmBIQhZpuTI/CG+/gI6qIP6FR9QriwjIywMuc6Tsey36IUBhGXAdVVfAM1lv0cv1MoYOclFBKsnU9lvRSWjBIpoGsJrLEpWadQJN4PXJNQHFm0MRhZVv/rJVPbvo3CL5X/8NWQq+/dRutedutJnk1xX5FT2e/yXQU7lEveX3DE6/uuBasflkknGtSBtpF28pqKEETIYO5Zi3QI8mv3LqHKllsvga31afdFY9ptQpRkWIosRbIOETz/0A5UtMWLhSjRLcvrv2exfR4nIcxkuiapqVjaBwexfRqV+1QinbpSfWOr+VPb7UGkdJV0qlcM/fuIZLhNRdiL5ZC7/xemHfqDSXsvuiWpPCWtOcer9Ep/Ue3cnWUOwq6D5zAsf0RP729HH7tONpI9fXeOTD9+DiVJLwu42fCr7PfXLoPhSJ9cc1yX1uGcw+00o+TpDK7fqyrrTD63Ry4+7+XkMxHJvKvst9euyXHUs5Jar1ukWXlNRy/l2PtQz1vSVOvvjL5Tttvhd/S9L4XO+/YjlfFv1r2bQSbxskFPZb/NfQL9nUltl29jj7x+x6BXrpVaqfevRa431fLvS6Zp+3SfcU9nvQUlSvZBTE/yq9ORFndns30Ut59sv/eJB/U+ob2D7BTAo5A11AAAAAElFTkSuQmCC" alt="QR جن">
+      </a>
+      <div class="card-hint">مسلسل أردني</div>
+    </div>
+    <div class="card" data-name="ريح الجنوب" data-type="فيلم" data-country="الجزائر">
+      <div class="card-num">95</div>
+      <div class="card-name">ريح الجنوب</div>
+      <div class="card-meta">فيلم · الجزائر</div>
+      <a href="pages/095.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB/klEQVR4nO2a0U5DMQxDj9H+/5fNg9Pe7gLSntZMtPDQUUuzojRxXGReWF+vgA7qoH6sByg7gwyyLCO8nHRlvyVeGEAIZAFybcZJW/Z74oUSGStphfLredKV/aZ41ZKF0UiqpRN0Zb81Xs5FJElmLQHryn5TvCowsqreIyfNvItXV9SD2QbTGTWP5HHSlv2WeN0Vq+tnOenKfgsqSSQgaiJ/kJBA0i5eLVFV30dxHxXf1R8F1tGrzygbW1dmIWMsUU2zNfv3oqLlk0qubOKSrQAnXneUibK3ScmaMbPtMw8t65FoldyKhDCzkFWOdWW/ByVTzZCULuQKI5z7eEelGdrIcXLSFUnIOPfxhqoSr9JhY+JmTJK7eLVElWnDLF9lfMU0HHeyK/tdKKPKLwNOoRdDjzVn/07UJR2mEQ11F5ndsiv7LXpiMQhXwzCiLJ+7st+lVxMnjdFbqMYhOHriN5Q1m+J0V7M9/sTTqvcOx+7yvJ1WPqaodWW/Z97mMlIvVT+cVuu8Py5Ll7uaKbJ6ZXXG8i66st/TH7PzdHZmbqkm77bsd/mF9kyzUfCzP/7Eba3v25VQRjZDUHgPr09A1fWL9hoOPjrz0B8oKzJMpceuJ7VPYP8e1Pq+HWdHGGu8GB1/4nmt79vjf8DqNS0vkj79cV2L/nrTNx7Uf0J9AywX6WENCS2sAAAAAElFTkSuQmCC" alt="QR ريح الجنوب">
+      </a>
+      <div class="card-hint">فيلم جزائري</div>
+    </div>
+    <div class="card" data-name="الأفيون والعصا" data-type="فيلم" data-country="الجزائر">
+      <div class="card-num">96</div>
+      <div class="card-name">الأفيون والعصا</div>
+      <div class="card-meta">فيلم · الجزائر</div>
+      <a href="pages/096.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB9ElEQVR4nO2azY4bMQyDPxb7/q/MHiT5B9sCe6mtoFYOycwQGIKwZEqOzA/i109AD/VQ3+ILFL8sLCMsDMjjSVv2V/TCACEShGKpWT5py/6OXiiUEUbOn8jzSVf2V1Ehl0Ahmprw6otSSZTL6t+/8eNQXzC1iZIVxUtennRlfx6Fp1jfPwXpyv48SjPvwkkIYpNcM7Ir+yt6yUSdDy9RFxlGz39tqHRcpD+VjDMh7dgDGrM/jxJGVd8NudQyjFuzP4xSGdVpWpfIvqgt+yv747oVxp0wFvFtv/3xT6iSzdl3W1L23x/A/iRKaBStaLDF6I7sV+/XUI0gakghl59Y6n5X9pdQMmW5NFTK/Hx+YotaX2G+aioRNUx5+fzqhhLYku0wq2NKmHn66v2OMoreUYBl46FabgGN2Z9HCVPph5y7I3EvVGzM/gZKjIGqZUtgFJvlTV4NUanItKbMOg85nmjL/tr6mjOcSEBF551Dsd7sj6JU05ywrKoOu/SLVdeV/bV8hDL3JVnpp+e/ttjm92UivPTf+M0ndpTtMSesolV23+98e4vlfFs47X2eQ4rK167sL+kVUceO8phVwPs/wN9RVv0fACknX6HZJ7A/g1rPt7O7HtOvecLdlf0dlCQprZjGTCKN/6v3Wyz+69AbH+p/Qv0GeggGHCYrfd4AAAAASUVORK5CYII=" alt="QR الأفيون والعصا">
+      </a>
+      <div class="card-hint">فيلم جزائري</div>
+    </div>
+    <div class="card" data-name="كان يا ما كان" data-type="رسوم متحركة" data-country="تراث عربي">
+      <div class="card-num">97</div>
+      <div class="card-name">كان يا ما كان</div>
+      <div class="card-meta">رسوم متحركة · تراث عربي</div>
+      <a href="pages/097.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB9klEQVR4nO2Z0Y5jMQhD7dH9/18++wAk2U5XmqeG0UKr9qqxVAsFMGD0A/v6CWhQg/pmj+R4QhaSMa7nOunK/oq/hCRZxsaSzPaUJPdlf8dfcnpGca3SW2addGV/yV/bCDedLrzD6xegEBGItiTsJrxaoR5pByPOfC8T14xbvLqiHq0yGJVx36qd9tuyv+KvI08ZSeTrOOnK/goqq6FCgsnxgy1bsn2LV1cUtmyEheJtWSLSP6O/DjPHg1PlO3S+yM+27K/4K/of4ipFXTxl6/jrtEflM1VFzBg0pNumf9z2HCGolGDpJO871pX9HZTBihemeqKcUUw8vqJCdCEyxa+I1NTHdyi8ZBdegRi9d0rWxuw/jKqmp6piNkQ5NKyY7Mr+DgqB7SUiiG9ntp94PI0UrNUxZixCnQF0ZX8LBbJcjTYgmS34m7P/JCrmq7HdMNUWYfZgZ/TECwpEzCFcqgvHnUMzn3iDQlDboMj2OBI/o7/+NmowmOmeyPCV+IU0+X7bmudk2qqlbS6Ico7flf2VfF9jGyxq87g3kPLk+8OO/XaZYfWPM594sXO/nbeK8thqlNqyv4syggjLCM24eFMf/4EiVkIxqPC5UvsN7D+DOvfbWhOJHIVJM594sXO/HX1k7T5iIxmCoiv7q/rrQ/84qP8J9Qf0M/0+loQr/QAAAABJRU5ErkJggg==" alt="QR كان يا ما كان">
+      </a>
+      <div class="card-hint">رسوم متحركة  عربي</div>
+    </div>
+    <div class="card" data-name="المهرة" data-type="مسلسل" data-country="اليمن">
+      <div class="card-num">98</div>
+      <div class="card-name">المهرة</div>
+      <div class="card-meta">مسلسل · اليمن</div>
+      <a href="pages/098.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB90lEQVR4nO2ZyW4DMQxDH4v8/y+zBy3jJi2Q01hB7V48NYEQglZK5o3z9Q7ooA7q5TxAcTPIIMuqe71MZb/FXhhAyMiCuJjrZSz7PfZCYRmB+uLyMG/hNRX1WD86EEHpYbt4TUUt9opwdDpZXLfxmop6AGUYWZnviZzfL1PZ77FXlsGojOonuV7Gst9iryVPyYDzb3mZyn4LKpxIgC1Q/ENCAkm7eE1FWUJyepPBYTPbCHz6ryeUq+dSeBYyxhJRNGezvxcVTallhJUt2NW2Ahx7LSfmIWX+ipQVMShnC6YzPz6hZMthNhPxmRY8+f4XlCxFilfYDWXWr551MvvbUbLAxrI7Np3xeerjCypTvBVNl3Pi7klyF6+RqBx63B8xEIVoqIrJqew3zUM1Neb8kzFZnnbq43JCz0kRWi2oRo/fvjeV/a54dMVkd6wdmz7+tZ7qVzvlV79/CTvHv55Ripkb2nYWjuvpV3+c0ldT+FLJ91ZoYJHYprLfmr+Apavvmqmzf1yOLnW1ZYq2IqXjT2V/P4pem9lkCF7SYX57Kvtd9ZHezELstqvD0CZeU1HrfrsVirRYFswtvD4BVTIFVoqtADr6xB+oVHOiYGpdqX0C+3tQ6347egdhLPcseerjetb9Njkt1txItatj2W/tv276xYP6T6hvjI71VSN+wVsAAAAASUVORK5CYII=" alt="QR المهرة">
+      </a>
+      <div class="card-hint">مسلسل يمني</div>
+    </div>
+    <div class="card" data-name="دويتو" data-type="مسرحية" data-country="الإمارات">
+      <div class="card-num">99</div>
+      <div class="card-name">دويتو</div>
+      <div class="card-meta">مسرحية · الإمارات</div>
+      <a href="pages/099.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB9klEQVR4nO2a3WosMQyDPx3m/V9ZvbCd8eyh0KuJS+OFJSSCFSb+ibwyP7B/PwEd1EH9ZxcoVkYYZFkGuZ1MZb/FXxhAyMiCWJj7ZCz7Pf5C6RniiiEQzhvmLbymoq62DufI93ofr1+AsjNlSYClIbxGoS64g9GV74mcv06mst/jr7xIURnvWyXXyVj2W/zVO1YDzk87mcp+Cyou0cpZig0JCSTt4jUSFU2DlXdJjh1nfRRYp199opyeWV8yzgIZ/pvM/l1U3i/yKkWXeu8AHH81u7IOrodQOQ45o/TEY7MrQ06Vvypx5ZY28ZqMiqIoISJ1IS+94sTjJyoCL1v7HpG4VoPZv4/yXRqtFpurEoxm/zKqiTbcChghGqpicir7Xf29pWjk4xkUiV53UzaY/cuokp1dQnQUxLp1Ry/8sGu5Kx1U6Ut9ayr7Xe8hKxSJCEEJNb3w9BOfqOadbOqjwxDm6BMPC/0+xkGrVY0+3+G4o088zM6CmB4z2LZLLDTYU9nvqY+1xPV8VFXG1PGnst9WHwFnSwHVtOaL++T7D1TEXz2JoqWvl/bRJ57W59suaVX2GkB6D6+pqOd8u0QKYZdIofN/k29QRqr3t9RHar+B/TuoPt9mKRJWTYyOPvG0Pt/OGlmidEwkfepjt9Z/vfSLB/WXUF+rePNVC9ZGLwAAAABJRU5ErkJggg==" alt="QR دويتو">
+      </a>
+      <div class="card-hint">مسرحية إماراتي</div>
+    </div>
+    <div class="card" data-name="خالتي قماشة" data-type="مسلسل" data-country="الكويت">
+      <div class="card-num">100</div>
+      <div class="card-name">خالتي قماشة</div>
+      <div class="card-meta">مسلسل · الكويت</div>
+      <a href="pages/100.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB/klEQVR4nO1aQW7DMAwjh/7/y9yBVOKkl54iFbUHBMlMYIQgyRQ9Ch+sv09AG7VRb+sF0G8CIYCiWO+1M5V9S7wgACAIUQRAgS7T7Ixl3xMv0JERnVbgEbPsTGXfFK8sikJSi9RyEkxl3xovgdW2BMip1sVrKuoFoAJDge73eR47U9n3xCvHIEVBXHfrYyr7lngtfYoAoPwsO1PZt6CcRAQgH47MNwmQ7OI1FSVaPyjZlcZPSSCgrb+uKCZAQD0oyGGEZdhg9g+jmBwSCOUNp2wFgB2vZVlPZGCUW5ZrkIoE454fLyiXnM68kgchF+fu95cVfe9W76HRJkX5Fbse7ygq6VVRSkXmY5+PN5QYQeEorWZOzZCD2T+MWkwbJ5SqNB04bj/njkrL4mFInDK/RNlg9g+jqLPZs56pxfSvFl5TUT4f16JUDMOIfm39dUOxGjtr9LaXX2bO1hPvKDHBiqgXITf7rVcvq+ahSIizGj0f5TdT2T+P8mF4moPWrpKOwxKQprLvOR/rFedFbZ2Mybep7FvqsWwbEaJsTaTxx54Yy74H5fqLi1PXaUDJjDZeE1Hr/TZqAPIEzlKuc9n3og5nQozZCvjW4xvYP49S7GgCItcrtW9g/wxqvd/G4RKK9e8A25+4rvV+2894OvKNpAXFVPat+uuhv7hRv4T6B6xV71qx5S3rAAAAAElFTkSuQmCC" alt="QR خالتي قماشة">
+      </a>
+      <div class="card-hint">مسلسل كويتي</div>
+    </div>
+    <div class="card" data-name="زمان الإسكافي" data-type="مسلسل" data-country="الكويت">
+      <div class="card-num">101</div>
+      <div class="card-name">زمان الإسكافي</div>
+      <div class="card-meta">مسلسل · الكويت</div>
+      <a href="pages/101.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB/klEQVR4nO2aUWsDMQyDP43+/7+sPdhOcy2DPp1dlgzGXU9QIXK2rFTmg/XzCeigDuptPUBxZZBBlmWEtydT2bfohQGEQBYgo3hN88lY9j16oVTGEo57YXk9mcq+Sa9aqpfyKWEXr6moTa/QySmbtQk2lX0Tyr6UMNf/9WQ0+1tRD1YbjM6o/WndTGXfoterY3X+bU+msm9BxSYSEG4iPhBIIKmL11SUJZCzwhuMELKNQsTB7O9HKQUK4UDIOO/Cug5mfzNKLqsVWyn64rKtAEevK8pYucvsKFlLM9vnfXxDadUtGbBzJOLU+9f1gOyLMQjJMRNFUQvPOpd9T723jI3lbIlRykKy0x9fUY45KB3XJcypGXIw+5tR0R8r6HImYGRoWO/kVPZN/RGvrlj1PvcbnLzwsp7WIWKJNF0VFZ688GXpGdOTLVEVhMlKgz+VfYufSFnWpB1ZtDcVx7JvQ+XoWFsMC+duO351X5FHp0nd4nsrPoxGOZV9k5+oKs86eayjtczxp7Jv6o95iauUrdQic/yp7HvqfVzZtb/W3qqJciz7nvpVB47pLRTKUS6shddU1H6+vQagVCwmox5e34CSLGzF7wLqhFtnHvoDVRl0RPn7kdo3sL8HFXlh3rgyHKt+DnDyievaz7eXlXDN2mlXx7Jv9V83feNB/SfUL3Am6V771chcAAAAAElFTkSuQmCC" alt="QR زمان الإسكافي">
+      </a>
+      <div class="card-hint">مسلسل كويتي</div>
+    </div>
+    <div class="card" data-name="إلى أبي وأمي مع التحية" data-type="مسلسل" data-country="الكويت">
+      <div class="card-num">102</div>
+      <div class="card-name">إلى أبي وأمي مع التحية</div>
+      <div class="card-meta">مسلسل · الكويت</div>
+      <a href="pages/102.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB/0lEQVR4nO2a3W7rMAyDPw55/1fmLij/bMMBdhVrODaKNqkJlCBkiVIq84v18RvQRV3Uj/WAcmWQQZZlhLedruyP6IUBhGxZwJBr7rRlf0YvtDTDjLiS505X9of02pZRpJO3StCV/VGUR8qSAEtNePVD2XUcK9+P97nTmv2rqIdZBmUZa98dN13ZH9Frd6wm59J1dYxXY1RVQ8AoRTL3Ekg6xasryhLIFU2ObEK2Efj6r68olUBVGFHES4GMv2jM/mWURgx5fMSwLtvK1Wtb6YeiWn3UGZRdst3+ca0nUTVroasDUhl9HeLVFZV+KJmKHMfYVfamuyv791G4rFa95VXfuuyYu7I/5CdgWflxEEfAnePVElWZ3vMm6tXQcJzJruzPxBdYZeST75PoxXT6jdm/jKqQ2gfRUGcx/dGNr2+omg9GsOR3g7xp1pj9y6gnLkLluWJbsbwGO9dP7Kucw3w5EVaTwriM6yfmil/1nNuP8b2VGViSWlf2h/yEZ2u9HqWVsUi31JX9Eb3m5ZJLozLWHL8r+0P5HgCXs9CKrVkFurI/Nc8h8+dyrnY1SfMvAV3ZH8r35UortDwUi+E/w+svoBJSFpbmIAxdv/oPlIlLFXGw65HaX2D/DuqB9ZxxTiRcPSV3PvFt7c+3GYp59I1lV9uyP+q/XvrFi/qfUJ/TTP43h6UOQgAAAABJRU5ErkJggg==" alt="QR إلى أبي وأمي مع التحية">
+      </a>
+      <div class="card-hint">مسلسل كويتي</div>
+    </div>
+    <div class="card" data-name="بو هباش" data-type="مسلسل" data-country="الكويت">
+      <div class="card-num">103</div>
+      <div class="card-name">بو هباش</div>
+      <div class="card-meta">مسلسل · الكويت</div>
+      <a href="pages/103.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB+UlEQVR4nO1aO67DMAwjH3L/K/MNlBSnXTpZKmoPhRMTCCHoS5fCB+vvE9BBHdTbugB6JxACKIq5z5Op7FvsBQEAQZEigDRXnYxlvx8FCQIgyOZRJjShTjSVfY9/5bJ1mE61VIKp7FtRAuV4JACRQ3iNQl1AeZITvSjGb51MZd9jr3AkV0aup/kwlX2LvZY8xUz9merbeA1G2YkcfQToF3QeI9nFaySKAlhVEfSOivpIQDz96gNFyE5VnkVBUSBtv8HsN6Mot1oUofAmRHtf49BY9j3xeFvN8Wer1VR04vEFRcpVkZ6GZMM5OE++f6zoV1mztUKkwDp0T2Xfk+/tWCwrRVTGg44+8US5EGZnz+otlHl/NPvNKGrRIjw+AkCIhhmTU9l36V+KTCXVKyAUsaN/rcudBKKFQA7c6XXhelPZ9+Qvd/NZHGU3oxabDWa/H0WmFhFXHCS46IWnn3hBqaxTXZcIeXv61XdUWCdGI89A5BKpo9lvRcUEhGwpJEBSlkhXyFMfa/FWV7M6ap2/rVdMZd/lX7mJdit9LW4lj389UY6/pUTG1e39l4DJ7PeiLuAeiBTSKqW6gFQPr29AkXIKE0Ns9dtuXlNRsnRvEYfrldo3sN+DWu+3USqhvQzA0Sde1nq/Xa2Ecm4MXWcs+9b+a9MXD+qXUP82hRAd4QWpRwAAAABJRU5ErkJggg==" alt="QR بو هباش">
+      </a>
+      <div class="card-hint">مسلسل كويتي</div>
+    </div>
+    <div class="card" data-name="سوق المقاصيص" data-type="مسلسل" data-country="الكويت">
+      <div class="card-num">104</div>
+      <div class="card-name">سوق المقاصيص</div>
+      <div class="card-meta">مسلسل · الكويت</div>
+      <a href="pages/104.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB9ElEQVR4nO2awW7DMAxD+Yb+/y9zB0mO22ZAT7aK2SsyNyYQQrBoRirWB+PnE9BBHdTbeEjEzBLy+IJ8rXRlvyVeshRRc12NDB4rXdnviZeImCErdtjYaLnSlX0DFAYpN92SJ34vyvVZ9sSvQz2kihCWLFMCdq20Zb8eJdd28s1fQbqyX4/CT3Oc4sVTXnZlvwWFhEAoY2VLctzayKszCoePiCsK74UUl+bsF6Jkv5yJpVvx3/LRr1eUhZ1ZaFxBlJ361pr9BpQNKiOBBJIMlZS92a9GAdebtsKBOQ7IPD47s1+LUuZhqFgqmccs7h79ekbZwjitvRTFiTgHjn69oUwaCUPovVRxC0/Rmf1a1OXvI2CqF0ghGcebZFf2m1CEQ52iF3mJ8xhozX4pqjaSXG+PEbc0F6c+cYPKqjNkOl511lOPvkFl4pWVyOpE5SLHr86D6ARl/SY031MxJxK1K/tt+0uucoSxLAMIZOPW7NejsIQoec9+h7IwJh/9msZUX70Ml/K0zBZbX/brUVN/25SdL5M/ItaV/ZZ4DT+R4u4rNevw7Mp+o7+vekQdlKTtP/Wvv1A4PD1R3iFqPPjk4z3KlPyHvYdhXr+A/SLU1N/OmePXJtHhThXryn496qm/Xa3HEb+8d+qrY8z97TVPPKj/hPoFLfgJHhfdYb8AAAAASUVORK5CYII=" alt="QR سوق المقاصيص">
+      </a>
+      <div class="card-hint">مسلسل كويتي</div>
+    </div>
+    <div class="card" data-name="على الدنيا السلام" data-type="مسلسل" data-country="الكويت">
+      <div class="card-num">105</div>
+      <div class="card-name">على الدنيا السلام</div>
+      <div class="card-meta">مسلسل · الكويت</div>
+      <a href="pages/105.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB9ElEQVR4nO2aUWsDQQiEvyn9/395+qBeTEKhT7eGaiDsZQcyDOqqezJ/sK+/gBa1qDf7BsXKIIMsywi3nansj+iFAYSwLEAmFrUzlv0ZvVDXLJ6V3hY7U9kf0ivNqqB8SHiK1wegSickwNIQXqNQ33B5kqzM9/l97Uxlf0avdKQ4GdV362Eq+yN69YrVgPPTdqayP4IKJ4roUxyS8SyBpFO8pqKsKB7CmxyyCdlG4K2/nlGt5krPknEekEYezf5mVBSlKZiFFev8BWD1ahb1hEw1QiUcslO27R8fFv2QK/BwFvbKZx3iNRWV/kXNJyLvyyJnFBuPr6jwK0dUtogMyfZ8fEVFSa/sFysQw+GyyBjM/mZUG9rQMlYODSsmp7K/H4Wr+QFsXz+RpSvGnsr+jH9FL/Q0hC6v23nhO0oljzCSw83kptlg9gdQsnBmMAyKWX4Nc7ae6Bb565rjODNW5rIoNTZ/PaMsHEleEYfIUmm58djtciNIz8K2H2cmez42k/tS2T6qTkbFvGIq+yP9Y41trCz167Y2i43N983a/TZAVBRuLfghXlNR/X7bEX4mFXu8EjCV/VmUYhIdtVcNwtCej7+gjON9E7DUr9Q+gf09qH6/zTWRsHIWvfOJF+v325Rirr4x5zpj2R+tv276x0X9J9QPbUL9MlkB+gcAAAAASUVORK5CYII=" alt="QR على الدنيا السلام">
+      </a>
+      <div class="card-hint">مسلسل كويتي</div>
+    </div>
+    <div class="card" data-name="قاصد خير" data-type="مسلسل" data-country="الكويت">
+      <div class="card-num">106</div>
+      <div class="card-name">قاصد خير</div>
+      <div class="card-meta">مسلسل · الكويت</div>
+      <a href="pages/106.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB/klEQVR4nO2aUW/jMAyDyUP//1/+9kApcXY4YE+xDrM6tGlMoARhyRIzox/En5+ADuqg/oqP5FwhGckYI4tlZSr7LXoJSbKMjCWZRUPJc9nv0UsuZbBFvovstqxMZb9Jr4pbJslmOQmmst+KAiURbWWvzeA1CvWRKhlT7lPv6/1amcp+j161kYwRXlf7y1T2W/T63rFSr2VlKvstqGyi1CxJzg2njtnexWsqCltKKqL8WZYBOSIOZv8+6u65+s2IOiDTXwxm/zIqTSkW2UrkkLwllI5eS3wy/iALZxCqHDSUbGd+fKCwqcSzkUQGoSTnqfePyDxkKZXeJkaFVR7FycdHuOZqumhVbl6SiZOPTxTuZkt2C6gYYtWyDmb/MmoxbdZTsUzDzsmp7Pf0XwjZvixVIpvvpmww+5dRl6kaQ4K79ltVv7bwmooyD2Hqlm4hOf3XGh+1DV1zdvoIcxs7p59YA4ToExHIR67i6sBU9ptQWKWTFN/e2K3lqfdrXNtIqp0lAPoe0tlfd5j18npQ2weA41dMZb/Hn8gVGPpsLM+17Imx7Pegkn+KKVE7rCdtb+Q1EbU+38ZxDlPz6wEke3j9D6hsLNzC1VR5zsd/oHra9m2EHX/iW6zPt6sBExkmF89iKvs9evXz7f4fsJ4b1b7OWPZb+6+XfvGgfhPqCwJZ+z3yN8xLAAAAAElFTkSuQmCC" alt="QR قاصد خير">
+      </a>
+      <div class="card-hint">مسلسل كويتي</div>
+    </div>
+    <div class="card" data-name="ثروة" data-type="مسلسل" data-country="الكويت">
+      <div class="card-num">107</div>
+      <div class="card-name">ثروة</div>
+      <div class="card-meta">مسلسل · الكويت</div>
+      <a href="pages/107.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB7klEQVR4nO2awY7DMAhE36zy/788ewAcp9FKvTSmWvtQtWGkjBBgGCrzxvl5B7RRG3U7Byi+WWCQZRnh09KW/RJ/YWB2kOKLXJa27BehJAESxmCDsU5Lb/arUEYyhO8y6jrwaovy8JFG7frsG78PdUCFkiIHLYwsPCxt2a/xV4WSZTkrfXyWpSv751Gay1RE1svDNbwao0TejoBkCUvxQGltzP5h1EEmnvNOzNtRToNxX/ZrUBZYwkYiq34BdnzdUAJHPMkeXYURUlg6s38WNV2FJl0X7juf7fnxgpJksAVyNV3VScRl0Jj98yjXVD0a13KYQ6tozf5h1NRqhccUlStc5rR3Zb9Mn8ikvGakyTasN/vHUZF64ScjhKzSKLzz8Y4yyqofv8js3P3965ErkDQJ0EphOgtZW/ZL5iFFDnpckTUOhaaz+9UXVMjPU8dK/Mox3Dsf5xNq/ZiBOEdHp5CP3ZX9ov7r/DgHpHPo3vPQdCYtJ8tXlvjwWBaxruzX9vej4k9qmBfx6orK6ZGxHapCNpSdXb/mc91vZ1jJI8AiTbuyX+OvaTtbavRoLXY+/o0SsjW2tqa23V/B/nHU6CpkrFS+vOehO2oSJ4wolRBAeM9D05n227EgsvNvOtl+7X71cm6r7I+/caP+E+oXfgzjQutq50gAAAAASUVORK5CYII=" alt="QR ثروة">
+      </a>
+      <div class="card-hint">مسلسل كويتي</div>
+    </div>
+    <div class="card" data-name="سعدون" data-type="مسلسل" data-country="البحرين">
+      <div class="card-num">108</div>
+      <div class="card-name">سعدون</div>
+      <div class="card-meta">مسلسل · البحرين</div>
+      <a href="pages/108.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB+UlEQVR4nO2awW4jMQxDHxf5/1/mHihNPFkU6GmsYK0CjV0TKCHIEiVH5hf25zeggzqof+wFysoggyyr130ylf0Wf2EAIVsWICOb98lY9nv8hd4+w9nLHWHewmsq6vWxj5tAFWG7eH0Bqi8fEmBpCK95KCeWZExn+4RZnYxm/yjqxVUGUxm1nvZmKvst/lrylABcP8vJVPZbUAkisRTJ7CWQtIvXSFREQ1fFS0a4hITAOnr1hoq7rlhCSfwpkPHfYPYbUG79YEB2rY3qbo5m/yxKvjS9hfOBcy/bg2PZb0EZqS6eZMBphHI5T76/2QtKy0dAyFS+7/Di5K87qmJKyOCKLKf3zmoy++dRkfRVIVtRkIFYSdbB7B9GyS3qqUjLVreUP5X9LpRRiS+UfB+Z30p/NvsnUR1SvrfbPSo888IPe3XnWIPo98DQCTEf/bVa9ARyeQwiXf0e7Bw9sZqNe3rjzAfzF/dEx/ZU9pviS8u4q29jOsgqlFPZb+sfO81fCoJO/dZ5f1xMXpc991JXxprjT2W/rT4C9hVT78/6NZX9pvmXk9wjJ3Ihu9M+86+7re/b7vGz7OsB8ryn/Yi6+m6rxoaQV49vYP88ysuXJrRqjK9g/wyq9H3Mnb4c/QVnPvFh6/v2JSXcvXbJ1bHst+qvh/7jQf1PqL8GovRMipue0AAAAABJRU5ErkJggg==" alt="QR سعدون">
+      </a>
+      <div class="card-hint">مسلسل بحريني</div>
+    </div>
+    <div class="card" data-name="حسن ونور السنا" data-type="مسلسل" data-country="البحرين">
+      <div class="card-num">109</div>
+      <div class="card-name">حسن ونور السنا</div>
+      <div class="card-meta">مسلسل · البحرين</div>
+      <a href="pages/109.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB8UlEQVR4nO2awY7DIAxE36z6/788e7ANtN1DT+BqIVGbwEgZWTAZm8h80H4+AV3URb21ByiuDMJ1I/Ac6cr+SLwwgEARISMLkMdIV/aHUJIgJlWFyKFrOdKa/TGUcm5p2xO/HOU6tz3x61APqAjJAFYKmOdIW/b7USVU4D+OgnRlvx8lr9f5hgwrsYx0ZX8EJRASceCYco6ug7w6o2RPSyGl9xLET3P2G1E4dGqqe+lW9fvq1zPKiqAYYSzPIDr1rTH7AygDmpmQ6k6qRdmZ/XaUFHZLKJQ+pllk4D7HqyUKO1denCVanpLmq18vqNSpqkqApcqNrn69oays4ESoluzIacE6s9+LimWYHrWchYdnddx2ZX8k3w6nGslQ1VTzTekc7Mr+VD5ksKx8NXokRsr3QWP2R1DKEAlJiBL/W49+bY9Ye6NOESY/OqzKIbuyP1LPCS9PeXnLSzFHWHd/6AnlMqipWcZYkpCwdfVrbUt9Is3DLFFAeo2u7I+sx3EZa9G5KAn1uv7+qS3724aqqKbJHxHryv5IvMo1jLKEwrzW5trV+7UN/aqNIrvqq/V39Wu2x7yUGdOs0iNFb1f2R1GWqDwbC+WavP5+acv+NuQ3OZFHqr4NuHq/NM2vvFTZ4ugatqIr+6P+a9MTL+o/oX4B9L0e9T85DLAAAAAASUVORK5CYII=" alt="QR حسن ونور السنا">
+      </a>
+      <div class="card-hint">مسلسل بحريني</div>
+    </div>
+    <div class="card" data-name="فرجان لول" data-type="مسلسل" data-country="البحرين">
+      <div class="card-num">110</div>
+      <div class="card-name">فرجان لول</div>
+      <div class="card-meta">مسلسل · البحرين</div>
+      <a href="pages/110.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB+0lEQVR4nO2ay24rMQxDD4v5/19mF5I8TtILdDVWcaVm0cIEQhh6UHRlfhFfvwENalAfcYHiN4MMsiwjvJ10ZX/kvjCAEMgCZBRlmidt2R9CSZFJmVYoLu8+ac3+UdS1/yGo1JK8TYKu7I+ibJxJBThz7jyvVqgLsk1Fu49+jxxp5lO8uqIu1hiUZXxnlVwnbdkfua+tTwnA+bOddGV/BBVJJHZhAYo+FgOyMfsDKAmiFE18hJBtBB799YayKS0BIGScAzL0RWf2z6JyJqayh5iLKVsDMve1RegJ1Sd1vQWy89pmf/xAGSOnuHes2lGc0+9f4qKElkFYDqNCa5mcenxDhU51VOBWkVmeMx/fUJa1ZNermZMZ1pn9wyj5lqpizck0Dasmu7I/hTIoHJzq9+hu+d3ZP4nK/HJ2fd+aqwTs5NceV5rQIbiyJCGvrwzEruwPoWw5rBznnq3NLxw98Ymq2ylRb1HZNnr1J1Roe4XKB1lKh3r01x4pGZarulT9vYDP++MWut3V2Ia0ZmUuRjMf99jetw2WrTu3yuxpy/6UX+iyDEOnpm69/yWgM/tnUReUYK31Ont+jkyf4fUXUJFfDu1l1fvHzMd/oByGTmSZ9ie1v8D+GdT+vo1rJbJcsmL2x5fY37fX2r02o/R12rI/qr8e+sZB/U+ob1za6WLhSVpRAAAAAElFTkSuQmCC" alt="QR فرجان لول">
+      </a>
+      <div class="card-hint">مسلسل بحريني</div>
+    </div>
+    <div class="card" data-name="البيت العود" data-type="مسلسل" data-country="البحرين">
+      <div class="card-num">111</div>
+      <div class="card-name">البيت العود</div>
+      <div class="card-meta">مسلسل · البحرين</div>
+      <a href="pages/111.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB+ElEQVR4nO2Z22oEMQxDj8r+/y+rD7Yzs7MU+hS7NCmFDBGsML7ItswvztdvQAd1UB/nBYqbEQZZVt3rZSr7FnthACEsC5BRhGm+jGXfYy8UlrHCrRBhvPUylX2TvfLIolwrDdXG6w+gbIh4FGBpCK9RqBcsT5LJfI8cbuYuXlNRL1YZjMp4eZVcL2PZt9jrqVidf7eXqexbUOFE4iYs4lsCSV28xqIkkCPX41CuQrZRlIDJ7PejnJorCiNCxlkgQ19MZr8XVTWR0F6hUi/ZCnDs9Y4KW6kiEemyme0Tjw9UVEJbqy9ytkScfP88ob+szGKRuqozojTrVPY98WiDjcpKWRXz48TjAxWBqKXyb8Oc9LDJ7DejqumpDJ8NUQ4NKyansm/SX7gSO7D02Er5s9nvRamElnMQvdxNKS+Ofz1QgqsZkoztrAJls8HsN6Ni/rWmqbnmsHwNdo6e+ERZMZZwZnirrkevvp1r36HyLCjB6iqUU9nvR0UxvP6dTaNrWGiwp7Jvqo95zf2jS5Xl9raF11TUbb/tiEZRorWGPXPZd80L7dzXQg1yoFRYG6+JqPt+e2nV6MC1GqWx7HtRKi+zdGkyHb36A6pEmMDSfaX2F9jvQd3327VPcxTK9TWXfY+9avJFytZUFasLn8u+VX9t+sWD+k+ob+td70564sosAAAAAElFTkSuQmCC" alt="QR البيت العود">
+      </a>
+      <div class="card-hint">مسلسل بحريني</div>
+    </div>
+    <div class="card" data-name="أم هلال" data-type="مسلسل" data-country="البحرين">
+      <div class="card-num">112</div>
+      <div class="card-name">أم هلال</div>
+      <div class="card-meta">مسلسل · البحرين</div>
+      <a href="pages/112.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB7klEQVR4nO2awW7DMAxDH4f8/y9zB0m2s25AT7GKWQXaNCFQgpBkWq7MG/H1DuigDuolLlBcWWCQZRnh+aQt+y16YQBhFAIpv7metGW/Ry8ys8CyMMJTOm/h9QEoG0EkmbB/Rz3P6wNQGr3rqV/8FNQF2cCqxUdFOvTyLl5dURczlSyHTqparCdd2W/Rq8RZP52vbbwaozTbPMjK1VHKPnb8xBIXlD2VIZfILEmVCevKfl9+WULhWC1mcZ78ekU5+hVGnm3LCAnr5NcSV5l6QaZWplhtIq2zf7yhVPmVFgwznUQsBo3ZP4y6yE4fnitUK8FMOrKu7J9HpTYjpWKqUzecMnZlvw8lVW7NijRpw9qzfxallMmpk2L7GLMcn3nOD5SMjaQsxTElPP7+NWZvl0cNxvUYS/dlv8nfO+QBrGhg2fuVM8TG7B9GpV+dJVi2IkeGOn71Hq7dz/gYc51aA+yu7Pf6r2pajOosSFf2W+pRN5fqeAcr14EtvLqixui5Rvd5nlZnbN7EqytqOd+uW+G8jHJEcepxidv5dqWVPI3rqcdbLOfbpE5aN+CnHv9G1aI4vIXrGOQT2D+Oqk02MlY6C5/90C2W8+2a4c9zW2q+05X9pnlOzCYkVG1//PnL5/9Mt1j810O/eFD/CfUNj3LbZrTbdCwAAAAASUVORK5CYII=" alt="QR أم هلال">
+      </a>
+      <div class="card-hint">مسلسل بحريني</div>
+    </div>
+    <div class="card" data-name="طفاش" data-type="مسلسل" data-country="البحرين">
+      <div class="card-num">113</div>
+      <div class="card-name">طفاش</div>
+      <div class="card-meta">مسلسل · البحرين</div>
+      <a href="pages/113.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB/ElEQVR4nO2awW4EMQhDn6v9/192D8Aku73saWDUUKnqKpbWQkCMU5kv4ucb0EEd1J94geIvgwyyLCO8nUxl35IvDCBkywIqXdfJWPY9+UIrZzg+I8vXyVT2TflakU25UtjF6wGoyhMSYGkIr1GoF1yVJCvnfXbjdTKVfU++spDiZlxVJdfJWPYt+drmlAw4f7aTqexbUFFEAmzFJRmfJZDUxWssSgI5q8lgFHLMCHz01wfKpbnql4zzgjTybPb3omRSm0Zbxr24ZCtw8rXFC0SMLaITqwdlZ9rO/viGssHY1NroWISiOc+8f4vUXyW0FEpCFvvSPZV9j56ImjJyXonRkZGycz9+omrEAxJybtxhgLmP10hUmja5bJtciNI0rJ6cyr4LZSMJR/elHtMSZbPZ34lK4ZUzHi/NpZQXp772SL9Q5JR3OTmKrSgE/lT2bf0Y8iuTJaHNLzx6You6DkveG5GjvsTEydcW5d9fVld1YyrXKLmp7Jvm/TJSl6ovp9U6749baLmrIuxo163pelUby77JnwBCgzm9iqytNHvmsu+ZX/WQloNfTt26/iVgKvumeZ+qNKvLlbG8M1t4PQElW46sVeYId/8J7O9HWSzdpf1J7Qns70Ht79tcLqHlkhVnf3yL/X2bUviuXbs2pKnsW/XXTd94UP8J9QtEM+RkgvpCMgAAAABJRU5ErkJggg==" alt="QR طفاش">
+      </a>
+      <div class="card-hint">مسلسل بحريني</div>
+    </div>
+    <div class="card" data-name="سوالف أم هلال" data-type="مسلسل" data-country="البحرين">
+      <div class="card-num">114</div>
+      <div class="card-name">سوالف أم هلال</div>
+      <div class="card-meta">مسلسل · البحرين</div>
+      <a href="pages/114.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB90lEQVR4nO2awY7jMAxDyUX//5ffHiglbnuZy8YarH3IZGoCJQhJpuQa/WD9+QnooA7qa70k5w0LIwsLSebaGct+i15CUnSSFMWQuXfGst+jl1zKCJkElyJY7UxlvxVlWcKSI5qH8JqLwqXRFXD/+ht/HeolLdpgIddz2ZnKfo9enXiYKlv91jtT2T+P8p13HVvKIblm5FT2e/wXap3Wf+oT5OO/PlBxD0QhG4EwAmTv4zUThRBlUaEC6z4CxGj2D6NuV+rLzd+r+qKx7Pf5ichkIl3+yHIibyr751EC+omU0kWyME+Aqey3oGocURpJKfGWZJxDYDD751FgXOY03j7vlaWn3/5CoR56tfdSHZs6fuJjUSaii1c+bJeRJvLUrxWFBU6lctX9OjB9/Nc3KnOvan/c3v6aIJ76tS5fVas8V9pupdzXTH8s+13xVQ1RZaRjWkurbbxGonxddnRUOcOv2uf0Q98ovw2+4lar8CdPR7N/FHWHVVUsvQ/E0odPZb+l376u0tIAmZarOu4tvKaiLovaHrU/66YbnX77AwUZT3QJWy0F5377bS332xaOUXV71z4/p7LfiqKLWALOS3L+AvYPoV7LOwb1T3Q6JX36oXWt99tVvqqMVXydfPxC2bbLivmaSUREn3r/tpb77Ye+8aD+J9RfHxsWEeVzzrQAAAAASUVORK5CYII=" alt="QR سوالف أم هلال">
+      </a>
+      <div class="card-hint">مسلسل بحريني</div>
+    </div>
+    <div class="card" data-name="نيران" data-type="مسلسل" data-country="البحرين">
+      <div class="card-num">115</div>
+      <div class="card-name">نيران</div>
+      <div class="card-meta">مسلسل · البحرين</div>
+      <a href="pages/115.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB70lEQVR4nO1Zy44DMQizV/3/X/YeDCR9HHoKrDZROzNtLI2FgBig8MX6+QZ0URf1th4A/SSAUP0gtHamsm+xFwTYasqrCJGqnanse+wF2maEYA8jIq3FzlT27SiBIk++8Y+jBHw4Mft5TUE9gLQQBUJiJbDaGcu+x14VfxTz64Myd6ayP4+i9ucUFMpE38ZrMIoAQYI2niDfyOtfn1ACQFlH+EpYe1VMDmZ/GGVnymdfhHUXBGkq+yb/EgBFFIoClP9FfhvM/jyKUTtmQBIgAYjMoBzMvgHlMGQ6kwhBYUU18pqIyjiUD8ZKWqpsBt389YKSQAlamoJU1EY3f72hlELCpqrqCLZgG6+JKCjCMKMPcTyWmMDVE88ogZHrVdWRf1NRHw1mfx5F5ytnMHsXLTLEOA8Gsz+PsnRg1JHi1me9/ejXVf17lW51MDK87cbj02LMOFi+5N5XJjJCvPOhtagaakSDlUteMCX+VPZdeqKURCn9tX37E/va+quM1G/XCkVx9f3z2ubb2bRHCbGy2FT2jecjEUICMfBADtduvn9FkSm2YtoRasxN/T5eA1GP9UhV2S17mGdrLbymojZ7uU8Y6kIVnTce97XNt+EEbxEW4iuy2FT2PfaKU9FSP4pJf1JWTGXfqr8OvfGi/hPqF51UCh6Ngp54AAAAAElFTkSuQmCC" alt="QR نيران">
+      </a>
+      <div class="card-hint">مسلسل بحريني</div>
+    </div>
+    <div class="card" data-name="أولاد بو جاسم" data-type="مسلسل" data-country="البحرين">
+      <div class="card-num">116</div>
+      <div class="card-name">أولاد بو جاسم</div>
+      <div class="card-meta">مسلسل · البحرين</div>
+      <a href="pages/116.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB80lEQVR4nO2a2W7lMAxDeQb9/1/mPFBe7m0L9KWxBmMHCLIQCCFINC0H6wfjz09AF3VRn8aHRK4sIc8b5PWmK/sj8ZIliRkuC2OD55uu7M/ESyRmlpSQMbKu3nRlfxiFJAxSBa8Jr6YohPwWqd/94r+H+pBGhBj1aOGpZYd4dUXJI538xTEgXdk/j8L7NeUhPIT+GK/GKCQEyiEn5ZxHB3l1RVkSdrQeSaB4L6ScGrN/GLX0S8OAVSG6PJmvfr2iEhJXFRpLrmC59K0x+wMoy1B+3ggJJBlGUXZm/zgqkfI8G1nOBFnTZ2P2D6Nkpx6VMhyi5alm8tWvzyg8rb0kQwJW4t+d/bMoy1QREr2XRtxSrZ3ZP4uSnZL0chDy9KxVpl3ZH/ITIJE24dR9ova++fUFqmJVdem5MCLzQXP2R1BkEbm6YLOdc/vRb6ixyPbQK7FqketX31Csfr0hDp/S++RaZ/YPo/DY1CDy5Qh9FkTD4ndlf8pP7PtDy6Xm9vYn9rH1V2eCSTLlKK6/fx3b/rZXP7VM/oxYV/ZH4jVcw8grU26sNte4/wO8odL9imoN8SePuf2v71C1GIJMAqTHw/X336DM5ruMqJq8/n4b2/62Iv3Ofzqe/wbc/NoG6y8vxmrRL/Pk9av72Pe3n/niRf1PqL/DmBYAzI7rPwAAAABJRU5ErkJggg==" alt="QR أولاد بو جاسم">
+      </a>
+      <div class="card-hint">مسلسل بحريني</div>
+    </div>
+    <div class="card" data-name="أماني العمر" data-type="مسلسل" data-country="البحرين">
+      <div class="card-num">117</div>
+      <div class="card-name">أماني العمر</div>
+      <div class="card-meta">مسلسل · البحرين</div>
+      <a href="pages/117.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB/klEQVR4nO2awYojMQxEXy3z/7/89iDZ3UlmYU5tD2sFQgcXpChkuSR35Afx5yeggzqoj/iC1JMQIcZI8LayK/sleiFAiMQA8aYhZF/2a/QirYwJMvIqzpVd2S/SqyNzU14SruK1K+qmV+kkVbvMTbBd2S/Sq4WpQm9MPV4ru7Jfo1cX9zoZM5eusr8t+yV63epUAOzPbWVX9ktQfRpyGYv+nUCSVby2RSUQu8ILEkJUAh7/9YbSTqp0ZkXEVMrFvdk/iyq/Kl5Vv7xEC5ZFvHZFfUF1Qan9WBIZiG3BcvrHK/p8HNUrtrFPbcSTX2+ROYbouUS7/OHzS75d2a/xEyraA4prRw65zvn4ijJtKIBrI1bv3ZZ1Y/YPo0bTU7VqVqy5OXPmOR8okWSYL7BkG27i7Mc3VKqqSzfbSWkW7S5pZ/aPo3TO6rvVbrF6anjy6xVVbWPL021Ruh2Ck1/foGJpVOk0O6IgZz7xiep6Vd6rqr1dxDz+6yUyPWnFcBCMSas594+3GDYV5v2jU8XRGG3L/nlUma1+qJOyvhmnJequ7FfNC3VcOs6CD1yvBOzM/lnU/X7bpGY7UYahcA2v34CKhFjeawzCyDkf/4EyOl6aSO5Xar+B/TOo+/02pk2qGa8DnPnEa9zvt6eVcPSNPdfZlv1S//XQPx7U/4T6C0869Uu3jrHdAAAAAElFTkSuQmCC" alt="QR أماني العمر">
+      </a>
+      <div class="card-hint">مسلسل بحريني</div>
+    </div>
+    <div class="card" data-name="ساعة صفا" data-type="مسلسل" data-country="السعودية">
+      <div class="card-num">118</div>
+      <div class="card-name">ساعة صفا</div>
+      <div class="card-meta">مسلسل · السعودية</div>
+      <a href="pages/118.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB+ElEQVR4nO2awW6DQAxE31T5/1+eHmwvJOkhl65ddZESFhiJkYXt8YDMB9vXJ6CDOqi37QGKlUG4DgS+rkxl3xIvDCBQRMjIAuR1ZSr7JpQkiIeqQpRlLa+MZt+GEoCcwZvDazLKL5H6/Tv+LdQDKkJRvqwsYFd2zmXfEy/Vgaz6RaOsK1PZ70fJL+ssXnrKy6nsW1ACIaHohsYGHKcaeU1FGZB9SQoptdfKycHsN6PiYcr/OJGJGHtj7Knse1A2yHYERwZnsJz1bTL77ShHAQOyQ4IEWKqkHMx+PyoeoUrCVGAxcFf7HMx+Mwo7My/XWbRK5xt86tcLKuqUy5UAS87Z6NSvN5RJB8dS1HtW3Dj+xNN26fsI2BogY5a0rOMXvqAkpTuo0mEhJOQ0XCez34uSY7penkT4heVSHH/iHeUaIe2QXsLPZutk9h2oUPVe4iLN/Bomh7PfipJJFV/PUnhf1QaiYU5l39Mfq0rFWjd5URJ/KvsefyJysAT9pVLj8PgT9+3mr2rpL4iGudJ0Kvv9qNv7ba9lifwVsansW+JVlV4YxzcBqbxcHsVU9p31y7XzZe2QBsVU9q2oGrQVQVREUj75+DPKy5wIeS8t8foH2G9C3d5vQ32ewxols4pNZd+k74GrJ94+/FqyYir7Vv216Y4H9Z9Q3ynoBxPRLD+PAAAAAElFTkSuQmCC" alt="QR ساعة صفا">
+      </a>
+      <div class="card-hint">مسلسل سعودي</div>
+    </div>
+    <div class="card" data-name="رشاش" data-type="مسلسل" data-country="السعودية">
+      <div class="card-num">119</div>
+      <div class="card-name">رشاش</div>
+      <div class="card-meta">مسلسل · السعودية</div>
+      <a href="pages/119.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB8klEQVR4nO1ZQW7DMAwjh/7/y9xBlK12O/QyS9vsHuokBEIIFkUpFN5YH++ALuqivi6pbtbF85Op7M+jHnCQCAAiAIEiAGo9mcq+J16gYyY4ZIQigH4ylX1TvOqKs/WDb/xLKEpbw4688behHkBGKPRKtIBZy5p4TUWVKvjNLyFT2Z9HUXVPy7xWCejiNRhFgCDB0HqlEyPBjTrPaypKAChbLgIgrWVpKSazP4yyfmkb+tSt+Bd09aus8PdknDKIosLi+4F6eE1GrbQDIIIACUARxZuPr6hIQ5aQCaH8WT4nsz+LgiRI2v0jskTmLV39ekExDpKtPQAxVCzFfzT7oyjPc5bMQ264Hbe4mMq+x09ILwmp5Vmjpbz5+IziSsjdTDLU/p6v50W3ipGQ5W/fa+E1GKWcOhMURdBznT2pHsy+A+VmSE5IuWBmMzmc/VEUS03cLdEe5hCixrLvmX9xhcrh8ZxCTIs/lX3P/EsCQUsWxJx6EXl3MPvzKBuu6Kz9OS19mc/eYPaHUY89mXBtBJYRi2S98SqrfN8O0xWTiiyUFrCp7Nv8faRi5iTgKRhjM5v9UVT5vk2tYmlvTzH67qnsW1Hh7DMP6Vm0rr+vq3zfRqRkmDCbL0dvKvueeY43e4yz42dbMZV9j78/+8aL+k+oT46pFwJ2yQVjAAAAAElFTkSuQmCC" alt="QR رشاش">
+      </a>
+      <div class="card-hint">مسلسل سعودي</div>
+    </div>
+    <div class="card" data-name="جاهل إيجابي" data-type="مسلسل" data-country="السعودية">
+      <div class="card-num">120</div>
+      <div class="card-name">جاهل إيجابي</div>
+      <div class="card-meta">مسلسل · السعودية</div>
+      <a href="pages/120.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB+ElEQVR4nO2a224CMQxEz1T8/y9PH2xvAqUVT2tLjSsBS0bqyPJl7CDzgX19Ajqog/phD1B8MsggyzLC28lU9i3+wgBCtixARpGmeTKWfY+/0PIZjuf0WZ5MZd/krzQBFVqSt04wlX2rvwwogsrgCLUuXqNR9lXCkKvqbyej2d+KenC1weiM2k/rYSr7Fn9tdUoAjj9tJ1PZt6AiiAQ4mqMgGqRAUhevsSiFfnBGF0Yhx4zAR389o5ztMByXZd9YS18MZn8zShVDrrfIyZStAMdfm6nGxgilzD+HvE+3nflx2YPwjkE2rgmoZkg18ZqKSv0lcMRXuk5UeJ18fEFF4m1eyoqWD6c/vqBCR4TQelnm1Aw5mP3NqOiPtc7Jkg+5NKycnMq+az+xpsYYg3QN35z++AYl9plRUf2RnbE3m/2dqJKnlZSlWHO1kwJ/KvumedsWrs4IEspxCE58vUNdF0L2tV2N785+4smi3iuds9b3pVyjUU5l36QnfI3Wl4IoYRF7/Knsm+p9flzuUs2Rucefyr4lHyu2cn7Uiq2SX2PZN+0noO5osZBrf3j9JGAq+6Z6v+63IWq+KUFx7tP+QGVkWVr3Qzr7iV9QVa0EVuwQz37ixR6w7hldOsyqnwOc/cSz7ffb8brmRkqujmXfqr9u+o8H9Z9Q36tA8lmKG/knAAAAAElFTkSuQmCC" alt="QR جاهل إيجابي">
+      </a>
+      <div class="card-hint">مسلسل سعودي</div>
+    </div>
+    <div class="card" data-name="قرية الذئاب" data-type="مسلسل" data-country="السعودية">
+      <div class="card-num">121</div>
+      <div class="card-name">قرية الذئاب</div>
+      <div class="card-meta">مسلسل · السعودية</div>
+      <a href="pages/121.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB+klEQVR4nO2awW7DQAhE31T5/1+eHhhsx1GlnrxUXQ6R4x0pIwTsAJH5hX39BrRRG/VhL1A9GWGQZfVzn0xlv8RfGEDIkgXIqNI0J2PZP4/CxoBxucdd0Mxx4qns18TX1Tq0lOBaxesPoGxR+SjA0hBeo1AvOCJJrirm/jxOprJf468EkixXgB3WX6ayX+Kvu2KtQu9rBZvKfgmqgqhqFqB6ISOBpFW8xqIkqFQsTWGEkG1UTpzM/nFUSS+VnyjlinNBlr4YzP5hlCqGUMSEZahu6GyHxrJfqCdUrhKdg7Ljtt0/vqFsgSvEjpZICa9d79/tBZzStCRYvcmMYufjHaXElOSa5CQjy2X7fryj6iJsKf82zEmETWb/MCo1PjOJFDHI0LBzcir7RfPCdhLEeYoK074fb6ZIrygxn5qrHbfj62rVb1eEJf0yMKyuqL5PZb+o37ai85OSQpd54dYTn6ijdUyFt3CibevVD5SMHVkvR7gqu5Ctv66W+Wp0KR1ZjmLN66ns1+ivfkzZ77uyt7dLeE1FXfaNPSzMRvLYQHrvH99Rtl2b2bMJ6k5bC3lNRL3gaIhKhOGq+REUXsPrT6CEs7XVuR/Svh9/QDmrbYGl/vfEel6TUNf99jmlcHpK9nziZtf99iElzmVRzXXGsl+qvx76xY36T6hvaEj6PykdFzYAAAAASUVORK5CYII=" alt="QR قرية الذئاب">
+      </a>
+      <div class="card-hint">مسلسل سعودي</div>
+    </div>
+    <div class="card" data-name="نقطة ضعف" data-type="مسلسل" data-country="السعودية">
+      <div class="card-num">122</div>
+      <div class="card-name">نقطة ضعف</div>
+      <div class="card-meta">مسلسل · السعودية</div>
+      <a href="pages/122.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB+UlEQVR4nO2awY7kMAhEX636/3+59gDY3p459GUCozUtRUm7pJQQ4AJH5gP78wnooi7qi71AcWcQXg/Ce2Uq+xZ/YUivWYCRZZDXylT2Pf5C4TOZdJlqOVemsm9GCZAVoTaI12CU3zz182/8XagXlIdkBFYUsPjTXbymonCFk7/5FWQq++dR8nlfgiLkRCevwSiBkFBqigg5S1r75GD2z6NCSngLMCm1lyAug9l3oErLm5WNUip++erVd5QRdhQty+Ao9nbWt9HsH0cpQ8oGC4EEWKqknMz+cZQsJBOXVGDOfHQfr5EobOcltJipLbIEq6/+ekcJORKwmm45e6Nbv76gbEcDFK5a3VFVs9nsn0VhY7sSMpzm0qz1OJV9j15V5aFrREgICTn7o8HsH0YppqnKPFyTQ60xaw+vwaiUXKAU+sJrNM2dR/9j53wiAioSUaW+dM87TsshIZGQmZjaQ9b4fyr7nviq4yCV26LJZgfZVPZNeoIl60vjey/76onDXuWdmuVkzSpFEQpjKvsWf9UptpecKJEfvrv+Ouw4366Sb5Xycs0oprLv8VeG1f5eQtGA5/FtC69fgFJMKKTYBBQ7gXzz8bDXvq0RIdScNfeBm4/bjvNtsumOz5pCfGUVm8q+S9/D3hOPQkb1R1PZN/ePj7zxov4n1F/WVBUSSYAgMQAAAABJRU5ErkJggg==" alt="QR نقطة ضعف">
+      </a>
+      <div class="card-hint">مسلسل سعودي</div>
+    </div>
+    <div class="card" data-name="الغرفة" data-type="مسلسل" data-country="السعودية">
+      <div class="card-num">123</div>
+      <div class="card-name">الغرفة</div>
+      <div class="card-meta">مسلسل · السعودية</div>
+      <a href="pages/123.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB8UlEQVR4nO1aQY7kQAizR/n/l70H40pl59KXDbS2OMwkjaW2EAWGagof2M8noIM6qN+mJJggSKr/gG6PprJ/H3UBEAAQIgg/ghCoeMayb0KRBEDnmJMLjp09s9m/irrux4oR60Hs5PUVKKZksdLrn3/j16EuoApYEkuuXYSWZyz7nngllURRBEDXeS3PVPbvo7jrVQKi6sPdM5V9C8oyggR8EAmlX7K8g9m/jLqcUqW3ICRSlWIWYVPZ96BU+UWBERLrMJ78ehhVjTHFi6W+0gbEk1+bXTl6cH/E0qp1SiFqLPuueShjtwVr4mcX+3jNRJValVK07oQTRXXxGonaVZbPpJukQ6byT2XfhaLlF54nUmDpstns30aRWeI4TgTFdEmd87jbVXGp9NL64/WXwNMfd/P+aw2OyORYgSKOvn/YZWmqzD6pWgL8gqNX/0atPrh2hFJWhqTOPLRb9UPv7O/yhbog8m3RVPZd+mtTYfngHrpPvd8suxy/pcQjEasiNpV9q75nXQmtCGq5p7Lvql9A1Or9ovrk1K/dnvfbUV1aCeacm8q+Sa9ya4rMzwFq/m7i9R0ocjuXgmrcbuc1EuVT6CIv1uZLZ5/zsO1+W2uGzL0tst+Zyr4nXgmNBYRqxi75dfTqwx73269840H9T6g/c93qN7X+C90AAAAASUVORK5CYII=" alt="QR الغرفة">
+      </a>
+      <div class="card-hint">مسلسل سعودي</div>
+    </div>
+    <div class="card" data-name="الغرباء" data-type="مسلسل" data-country="الكويت">
+      <div class="card-num">124</div>
+      <div class="card-name">الغرباء</div>
+      <div class="card-meta">مسلسل · الكويت</div>
+      <a href="pages/124.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB90lEQVR4nO2awY7jMAxDHxf9/1/mHii5bmcPc4oFrIWiSGICJQRZppjK/CL+/AZ0URf1I16gXBlkkGUZ4W1lKvsj+cIAQkYWvC96ZSz7M/lClRlLOPdyqi0rU9kfyleHIGkCydtJMJX9UVRvPiRSazN4zUM5tSRj5O7628po9o+iXqxjMCej9tW+mcr+eZS8XWq1L4iiOMZrMCpFJMAIlAcyEkg6xWssSqretT5CyDYCX/31iaouD1VqSvJyQGaDDmb/MCqi1MIppZyLS7YC3Hx9o0ztvDQwvXNm++7Hb5QFdgZsA84glM15+/1HlP5qoeX0/ZIWNVXOZX9GT9hVU16SAgtxz8d/oawlu6w2JuC9P0ezfxi1mTYl9mN8xTTsPTmV/aF+j9PYy1J10rZa/mz2z6IiIbrHp2PVfd3d+tojfmElbZ+45Wpp6Pr3P1DCqLeghDa/8OqJPezSqhjHH8wT5xnYnsr+EEqm8qSoMWS16L/6a49N36e3W1VvkWX4zkN7fPirS3CpT8by8aeyP1JfbdtYdp+N5bm6vqayP6RX3S+IWBXWk7YO8pqI+ni/XbNQTeB6/yVgKvvjKEezqvxWiLt/nNdIlLF6/pZalJ3nNQn1gk5KtATCPRnB9Se+Yn+/3f8B2ybv+Dpj2R/VXw/94kX9T6i/Q3T0SEC1c5wAAAAASUVORK5CYII=" alt="QR الغرباء">
+      </a>
+      <div class="card-hint">مسلسل كويتي</div>
+    </div>
+    <div class="card" data-name="رحلة العجايب" data-type="مسلسل" data-country="الكويت">
+      <div class="card-num">125</div>
+      <div class="card-name">رحلة العجايب</div>
+      <div class="card-meta">مسلسل · الكويت</div>
+      <a href="pages/125.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB7UlEQVR4nO2a3YpjMQyDpaXv/8rfXvgnOTsMzNWJh40p9LQRVBjbUZQa/SD+/AR0URf1JT6S4wlLSMYYWayVseyP5EtI2hNkyVimVsayP4SyLckWQgIJ47Uym/2rqM967CaMQsMnef0ulHt2vfWLvwX1kXKAdXVZyFj0ylj2Z/JVpYRzbDnmPL0ylf2RfJVi3d8RtT2e4TUYZeXuKFnGFvkhXldPbPGRSp5GQVWmUHQkYi77M6iY8JaRS0h0K976+hcVkhQJG1RjC1m28K2vLVpPZA+6tWodIvE9Pz5RWALIBFX6JNVmMJn96yjWPhhpciWM8CpGs38Z5TXYcR6zq85y0zzCazTKzqEvmdWRyLkbjGb/Oipaj5xdDtUacz/cndHsX0elr2o7ZVe5hFfff401271sr3huW3ou+0P1RQx2SxANGBLWhqsnHpHnx+WBlQJzHSWvXn1E7ocoX5uvA7ECU9mf0l9u3576Yh26b31tUV5O3W/0iM8LojAvprI/qe/bf14Z7OWp7E/NL0nl45SZ087OnV97PO+3s6xMF1i06VT2h/wvbxaYQ0m0jD3E69eg6GuhsPPv/wG+Qxn19SNOZcE9Dz1iu9+mJljf26r8nansz+SrUhMCgvybTsqvq1cfsemvl37xov4n1F8SX+dJMfXKzwAAAABJRU5ErkJggg==" alt="QR رحلة العجايب">
+      </a>
+      <div class="card-hint">مسلسل كويتي</div>
+    </div>
+    <div class="card" data-name="الأسوار" data-type="مسلسل" data-country="الكويت">
+      <div class="card-num">126</div>
+      <div class="card-name">الأسوار</div>
+      <div class="card-meta">مسلسل · الكويت</div>
+      <a href="pages/126.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB9ElEQVR4nO2awY7cMAxD+Yr9/19mD5Qct53DnmItag1gZGwCIQRJpuVgfcN+fQd0URf1j31J5MkS8vqD/KxMZX/EX7IUr7lHY4PXylT2Z/wl4jNkJcLoqKuVqezPohJNhvVnBq+pKJwIe++NPw/1JbWHsCSZFLBM+hSvqSi5w8kffg2Zyv59FN6fKQ0ROXGS12AUEgIhjOSEnIEWYJPZv4+yJLzqlgSK9kLKMJj9CVRJrh6deIvH8NWrf6JSquxKRizZNVf1bTD791HxE9kqjZBAkqGTcjD791EYQTlKpcBc+ehzvEaiZDuDtURXtsgWrL766y9UBVI2xxITcViJ1tHsX0cZkfaNSb3X8lt2zMnsD6CSh/FNJJhswK34R7N/G4UAiGyt6QgJXA3XwexfRn1JaonfW2MFWaLr1q9PKMgR0knLLv63H/0BZUpQeOtOrFzk6tXdqoPj7bqjuhS1LnPvhx7DfYDsikXXr1Qz4bnsj+j7Jeaj8R+VmmXf/upmW391BZgk4y30xrI/oif6Ftu0nG+Rvzw2lf0Z/VWqgSruOR4lQauATWV/CEX6XY+4V3XBqEPSaPanUOlKQzqHxiX1bz5+RuUw1HmIqJy8+n6z7X5bz0c6Rs+3ATe+dtvvtzu8HvWVuau/lu332++88aL+J9RvbOoOIuHM9eIAAAAASUVORK5CYII=" alt="QR الأسوار">
+      </a>
+      <div class="card-hint">مسلسل كويتي</div>
+    </div>
+    <div class="card" data-name="دنيا الدنانير" data-type="مسلسل" data-country="الكويت">
+      <div class="card-num">127</div>
+      <div class="card-name">دنيا الدنانير</div>
+      <div class="card-meta">مسلسل · الكويت</div>
+      <a href="pages/127.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB9UlEQVR4nO2a227kMAxDDxf5/1/mPkiKneku0KdIRa0CGXdCoISgm6nKfMP+fAd0UAf1xS5QnAwyyLKM8PZmKvsWf2EAISwLkDcfguay7/EX2n1GxZV8v5nKvslfyzIplwu7eP0AlE0kogRYGsJrFOqCO5JkFPU+n/ebqex7/JWBJMtY+9v6ZSr7Fn9tdUoAjp+9gk1l34LKbgg4mqMgklMgqYvXWJQEdyoajBCyjcBn/nqijFGkX0QWioSMgi+PZv8yKobSHFItrDivsZXjr82uHFAjvCyV45Cdbjv3x2VXppwhM5NyklaMTWXfNH9lXc8JNUQKUqM4+fiJCvXGQtkbMyPF6Y//Qjm7YlglYty9c2QdzP5l1Cba7F0xRcPKyanse1DGQpIds+sa8yvyJrN/F7XiK4Mp8rK+PXrhh13c2k2WLqdgGLeimDamsm9Cmbo0RryFll8d4MwTX1C54bCcFd4ij0efeFjsO7wJ9/lUTK7RKKeyfx8VzbCEQWODbbu+M9hT2ff0x3VMWaduSKlRz2Xf0x/jZKvUe92f+ZjKvqd+1cIRwMTcWtuho0887bHfrn+cSI+VPj2XfTNKJkVWrf2Qzn3oP6iqVgIrNcSjTzxt32+vedVKLfroEx+277fj+VgWxbg6ln3r/PXSXzyo34T6C8Iq519RWst0AAAAAElFTkSuQmCC" alt="QR دنيا الدنانير">
+      </a>
+      <div class="card-hint">مسلسل كويتي</div>
+    </div>
+    <div class="card" data-name="دارت الأيام" data-type="مسلسل" data-country="الكويت">
+      <div class="card-num">128</div>
+      <div class="card-name">دارت الأيام</div>
+      <div class="card-meta">مسلسل · الكويت</div>
+      <a href="pages/128.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB7UlEQVR4nO2aUY8CIAyDv178/3+597ANUO+Se4KZAzWiNLFZWOmGMn8YX38BXdRFvY0HKGYG4fog8Fzpyv5IvDBk1CzAyALksdKV/SGUJACZEbyUtVxpzf4cKnZVhMi/ovbz6opyPbf94sehHlARksFYKWCeK23Z70fh2k7+4VGQruz3o+SXeYqXntKyK/sjKIGQiAeOLWdJZcA6s9+PMiCn5RIgpfcKl3GKV0sUtutMdEp8ZGK8G1/9WsaDtFyxnSzHMZneVaFvXdkf1PsQe0fQqHIynUVX9of0XkhWCD/hwKLgrnA2Zr8Zhe3UMPB4TU0DX/16RcWBmNYesFS10dWvN5RVMm9hzeoIpwXrzH4vikhHnhKyPmdRdPNxjgfpI1j2VvUM5Wy4dmV/yE/IREIub4zvjvBqjBLTTjgmnibs9qNfUdm8CX0fFx2Vi7r14zqUrZu0p8yY5TrW9fdzyEO0lnn0KaLJKvdlf8hPMGw96ew9l29/Yh1LfzUr7dxa4fR1/f3zWO63jeqCe01Qbj4uY7nfLr9qlaK5ehRd2Z+JVx6O428BVhTgs0Pdlf1RVJVFikNAcRLINx9/RkWkgLT3qp70R7DfhFrut8lsRFV+j4ZFV/Zn/FdOZhtnuq9s93Rlf9R/bfrFi/pPqG8lBRz8JTE2dgAAAABJRU5ErkJggg==" alt="QR دارت الأيام">
+      </a>
+      <div class="card-hint">مسلسل كويتي</div>
+    </div>
+    <div class="card" data-name="الجوهرة والصياد" data-type="مسلسل" data-country="الكويت">
+      <div class="card-num">129</div>
+      <div class="card-name">الجوهرة والصياد</div>
+      <div class="card-meta">مسلسل · الكويت</div>
+      <a href="pages/129.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB9ElEQVR4nO2aUWsDMQyDpdH//5e/PdjOpbcO+tR4zBnc0kUwYexY1tXojfX1DmhQg/qxHpJjh2QkY1z7OunK/ki8hCRZlowlGRl0nbRlfyZeckYGW8Rni8wwjvDqinpse1xFeYXwFK8/gKo4yVbkWg9erVAPaWWScd73+VwnXdmfiVcmUnRG76f1oSv7I/G6K1biZ7/BurI/gookWtXn+IORLdk+xastypZMZhMSsiwDssTor2cUpbmiMcoRvGiQyLRm/2GUkYlHCDBH8CqEkiZe+4LKMPKXJARxAgi6sj/UH9c8dO0dhZg51pX9Kf0VqivLMUwKkVU59XhDuQovcsrKrmhNf3yFIqyc0mFZiGGIpchozP7DqEiokqrrxsIr28bPuaGQQPYyJIiwOWM39bitzK9lQufAXVbh+IUvUFxGdGh7yC5QMevM/rOo8nPCfK7RG3MZO6Mnbiji/opNmNJYxGU//sRPVERHKVVD3ts5IY3+2ldKhhqtl4JQOa143j9uy+zbCperM0bbbMv+yH1fuYXSzVm55Zy827I/dN8DyzLMIagm7fEnntfT++1Vi5Fr16DUlf1hVH4pIL4XsII4/fEXFDkcWcK+3NbTvDqh9vfbwilSCcNQGn/itvb32/Gsdx/7HN6V/VH99aH/OKj/hPoGuKD3Qr6GdvEAAAAASUVORK5CYII=" alt="QR الجوهرة والصياد">
+      </a>
+      <div class="card-hint">مسلسل كويتي</div>
+    </div>
+    <div class="card" data-name="سرور" data-type="مسلسل" data-country="البحرين">
+      <div class="card-num">130</div>
+      <div class="card-name">سرور</div>
+      <div class="card-meta">مسلسل · البحرين</div>
+      <a href="pages/130.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAACA0lEQVR4nO2a24rkMBBDj5b8/y9rHlTlOL27ME+xh7H7goMFLYq6yi3zjfXnO6CDOqi/1gXKzgiDLKv3fbIr+yX2wgBClixARgnTOtmW/SKUJIidMCCheFedbM3+VdT1fDTlWpKnSrAr+6X2MnTaMjiutorXrqgLaMPIWLIs5LiZV/HaFXUxymAqo8aR3Cfbsl9irylPCcB5aTrZlf0SVJxI3I0FxLvUBXJj9u+jLFXuwuQthGwj8Om/PlA2sspw6VxxPaV13Zn9uyh5fGUiGvtpHNqW/RJ7qSZFZxNP89Ttn/nxgXLlqp64cQyY4Dz5/rGqv8+YLYRLpBjWO/H4gdLwKVdJTFWMyU59/ES5qiIRJmYxp2fIjdm/jOqhZ1TIWK9Ew47JXdmv8S9jS1Krg47xRsrfmv3LqPKv0r3GiJ0Kmfy1hNeuqNTH1upTFuNnmYryvCv7RfNQ5NShQkuohyNOP/EvVGd920NdTbI//epjtb7qKpHuaKzONYVyV/bvo1IM748dL3OLhQZ7V/aL9Inacl/UdmUsf9uV/Sr/6o3LxbrBT0ge/3qiEn/3NVEns/svATuzfxd1Ad2VVvAZ2UNt9RpePwPVUo503w/pzEP/QTnyREQcmTtGfwL7d1Dz/TZDJbT67wBHn3iu+X67x+5cFrWmf+6H5jX1Xy/94kH9JtQXRxr8PkvUERwAAAAASUVORK5CYII=" alt="QR سرور">
+      </a>
+      <div class="card-hint">مسلسل بحريني</div>
+    </div>
+    <div class="card" data-name="هدوء وعواصف" data-type="مسلسل" data-country="البحرين">
+      <div class="card-num">131</div>
+      <div class="card-name">هدوء وعواصف</div>
+      <div class="card-meta">مسلسل · البحرين</div>
+      <a href="pages/131.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB80lEQVR4nO2a22oDMQxEz5T9/1+ePkjyOlsKeYpUagXCLh7IIHQZyZF5w77eAR3UQf2wCxRPBhlkWUZ4O5nKvsVfGEDIlgXIKNI0T8ay7/EXun2G411YXidT2Tf5K00rKW8XdvH6AygbI0ACLA3hNQp1wYokGUW9R44wcxevqaiL1QZlGd9RJdfJWPYt/noqVsdnr2BT2begIojE1iSJ6BJI6uI1FWUJVioajEKOGYGP/nqgbEKoZmShSMgIOXk2+8+iZLLSR1pGX1yyFeD4a7McfCqUMv8cI1G67cyPt12wxFZJiHSS7hibyr5rfqxS7yhdyKLC6+TjAxWJZ1xeyq6YL6c/PlCumh9e2pc5GWGT2X8YlUsbqitWauql5E9l31K/RO4lcHbHyMlV8k9/3Myuqu71DbbjDGx7KvuWfLw3El571RQUSoE/lX3TPER95YZVaNsXHj3xE5WFfd0MWTgez37ixWp/n4v7EhMhxVyNcir7pvq11bCl6lNYYJ37x81qciRL/bojqgcd/bXbdr8dDdG6Y6vk11j2PfWrWmMuJOTUrfdfAqay79pPLJ9lLobHSvPPZd+MCiEW2mvdD+nsJ35BWRFTAks1IPXzmoTa77dDcYm1CoOzn3jYfr9N6lWtJUXK1bHsW/XXh37xoP4T6htwyu9P2rGMZQAAAABJRU5ErkJggg==" alt="QR هدوء وعواصف">
+      </a>
+      <div class="card-hint">مسلسل بحريني</div>
+    </div>
+    <div class="card" data-name="ورثة بن عاقول" data-type="مسلسل" data-country="البحرين">
+      <div class="card-num">132</div>
+      <div class="card-name">ورثة بن عاقول</div>
+      <div class="card-meta">مسلسل · البحرين</div>
+      <a href="pages/132.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB+klEQVR4nO2Z3WpkMQyDPy19/1fWXsjOyWlZ6NXEsHEpDBPBCOMf2Zb5hf35DeiiLuqHfYHyySCDLMsIby9T2R/xFwYQAllAu2u9jGV/xl+oPGPFT4kreb1MZX/IX2UWGCWo5K0TTGV/FNXJh0RibQavUagvKE9VqZdlIcvby1T2Z/xVgZTO+ESV3C9j2R/x165YDTh/2l6msj+Cqm5I1SzlCxkJJJ3iNRIV0dBdEblFK60srKtX3yg7DurIQklI0fpiMvvPomQqqpKW6Yu7bOX6azc7/6TQr5LverGxp7I/gjLITleMtzIIJTlvvX9Z5qEq76n2Ve/3oXsq+zP56OQfJDUrQztPbz5+Q0XUaw1F/dFd90ez/zCqljY1bK8+WUvDzsmp7E/peyNJ2up97Q/h7gtfphZatYTu+Go33n3hD1TJ+PgmtT8S4/HZYPYHUOu8YWrGRtu+8OqJb6gSWwCyhfNVvHj16st6f+/ulLW+t0rv6+4ndqtcXFvVpeqfAfzeHzdrmQrpjquS9YSk2x932+7byT7ria1e9oxlf2pfaK99lxJhPWnrIK+JqNd9u0WYEmutXOeyP9cfY1XpLWxlzcOt9/9CuSZGgaVn23qa1yTUft9mbSQc/UVvdKayP+Ovvm/XpaivaTWF3/6426a/PvSLF/U/of4C1tz/M2dtsZsAAAAASUVORK5CYII=" alt="QR ورثة بن عاقول">
+      </a>
+      <div class="card-hint">مسلسل بحريني</div>
+    </div>
+    <div class="card" data-name="أكون أو لا" data-type="مسلسل" data-country="البحرين">
+      <div class="card-num">133</div>
+      <div class="card-name">أكون أو لا</div>
+      <div class="card-meta">مسلسل · البحرين</div>
+      <a href="pages/133.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB+ElEQVR4nO2Zy25EMQhDj6v5/192F0CSmW66ulA1rDI3lsZChIeR+YV9/QZ0URf1w16gOBlhkGXVuW6msm/xFwYQwrKActe6Gcu+x18oPGOln8Jp8rqZyr7JX2UWRhVURyWYyr4VZXC8RwGWhvAahXrBiiQZRb7P17huprLv8VcGkizjHVVy3Yxl/zxKPo47fUGVyCZeg1ERRCLTl+KDjASSunhNRVkCOcPJ0bkK2Ubg2399oGy0CyMK50WBjAc6mf2zKJnMXIqJKD6sthW4/jpMPgqhQVhgeU9FuvPjtujvsyhG71VO0o6xqeyb4gtYwRXTUA6PzrloKvuefsI2tpBDycmqWO669fEdZbHbrvUQK+D6eI1EVa53/YiBKEXDSvlT2ffElzHS1iMciV6Z2e57PGyLgkuIhnyLK92PZd+U7zOFkd2EbZAPnw1m/zDqxdGzuuLN8hZ2bj/xgapRiBglcXyK49Un3qz01XTOku8tHI7znYdOs8ntEJG7wLZL3glVfyr7Jn0ij6zxUT6KZguvqahjv+0YH0U1rSX2zGXfpRfaua+FHIJqO3T1iXc799uKpt7Re+UC0j28/gTK2FhYKRtCiNR/gv3jKAvVfKRcgFx94t3O/fZuXB39F1x94sPO/TZUy1pzY7arY9m39l8P/eNF/SfUN30n+UdWO5vmAAAAAElFTkSuQmCC" alt="QR أكون أو لا">
+      </a>
+      <div class="card-hint">مسلسل بحريني</div>
+    </div>
+    <div class="card" data-name="الحب والكراهية" data-type="مسلسل" data-country="البحرين">
+      <div class="card-num">134</div>
+      <div class="card-name">الحب والكراهية</div>
+      <div class="card-meta">مسلسل · البحرين</div>
+      <a href="pages/134.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB+klEQVR4nO2awWoEMQxDn8r+/y+rB9mZmS2FnjaGxtA2uyOoMI4jKyPzh/j6C+igDupHvEBZGWGQZfW6n0xlvyVfGEDIyIJr0U/Gst+TL5TMiJQVqpytJ1PZb8pXRaUoRSXfToKp7LeijCwBEpDlBF6jUC+oNlWtXpaFnDLzLl5TUS/WMZiT8aoquZ+MZf95lHxbqlpYPnI9msp+CypFJMAWKF/ISCBpF6+pKCv6IeXkKFch2wh89Ncbyk5WurKSvByQ2aCT2X8WFS0fkWrEtb6NQ2PZb9MT1bIcjZ9qsyttZ358oJxe5SzI/lSV1+n3z6h5qOZEnL5f0oLWrFPZ79ETllNTLo2aHZmUnfPxHWWhGhpZxgTEAPM+XiNRZdqU07VOxTINe09OZb9L3xsk9SjkpG21/NHsP4xaQ/XThG6r8PiFb/Fq475UfSvWJFIl8Key35KvFva3DWj5MnaOnriHnRG71wZnYfK97anst+lVLvlVu1EkkfLZj/ew60DMTz7abe9gOPV1xcNfXYJLfTKWdzGV/aZ+D7QLtnZj/tavqez39K++xa5Q+4fXKwFT2W/q932/neshd8auVwKmst+PMhaWcFs8OvPQLygL9UsTqguQ4088436/zXIJrfKijz/xFvf7bWpa7C5Gy9Wx7Lfqrw/9x4P6T6hvW0f3TZyHTTkAAAAASUVORK5CYII=" alt="QR الحب والكراهية">
+      </a>
+      <div class="card-hint">مسلسل بحريني</div>
+    </div>
+    <div class="card" data-name="فريج" data-type="رسوم متحركة" data-country="الإمارات">
+      <div class="card-num">135</div>
+      <div class="card-name">فريج</div>
+      <div class="card-meta">رسوم متحركة · الإمارات</div>
+      <a href="pages/135.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB+klEQVR4nO2awY7kMAhEX63y/79ccwBsZ3sOc1mb1diXduKSUkKAC2iZH6w/PwFd1EV9rAcUOwvLCAsD8jhpy/6IvTCACPuExYw8T9qyP2MvlJbByOFcWJ4nXdkfRUkgCyRjVTQe59UXFT7F4nD/+ov/HeqBxTaWjSwyf9VJV/Zn7FWBZ5nM87mrk67s96M04y6UhCAvyaO8uqKeMJmcrrQ8xBujq7+WZdsYTP3WK2NHEnNX9kdQQ86HzSIk5xWAW7PfjNJQpxpqfq4yZFf2h1DpVEISGZcRjIoboDX7rajyr3qM/C7LYnpdV/Zn8pcwiJG2JCIuZdk6xaslqqrqoejDu+CV97uyP5W/jCWDpGGlkBThbK3Zb0XhFBFDTgCpx67++h4V+cslHhZdoau/PlG2ZkGkCE7PDuK9H/9GaTGY5+2IZcW12Zn9dlRWQopetG0p7Tb6h43Zb0aFnrCsMe6I5lee+9ZDn6jwLcBO3aq8MLn10Hs9Q60ybkmR4w7lQVv2R+w1RmnVLayW4aiS2rI/o1dzM59SwI4+4tWrL5TtkvhU0qrq23e+/VrLfLsmaCnBqkVxhldX1DO3qSMclRFzVtSX/VlUyQoJKTtfvvn+tdb5din86n7NCXdX9ofqRyn+a0LK1RqsQaqwzuz3opb59qYvXtRvQn0BWnAKI8N5oIYAAAAASUVORK5CYII=" alt="QR فريج">
+      </a>
+      <div class="card-hint">رسوم متحركة  إماراتي</div>
+    </div>
+    <div class="card" data-name="عمر وسلمى" data-type="رسوم متحركة" data-country="الإمارات">
+      <div class="card-num">136</div>
+      <div class="card-name">عمر وسلمى</div>
+      <div class="card-meta">رسوم متحركة · الإمارات</div>
+      <a href="pages/136.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB8klEQVR4nO2a0a7DIAxD7av+/y+f+5AE6LaHPZVIg0lbWyzNsiAxSY2+GH/fgA7qoN7GJTmusDCysJBkxkxb9lv0EpJCJ0mhWGqWM23Z79FLTmWETCwuycyZruy3oowlLDlEcxNebVEzYo0F14JXJ9QlLdoYoQheZpnpyv55lCix+PApSFf2z6M89135CWWS3MqrK+oKyZxmwpo3EcuQj/+6oUj3kGvLRiCMANm7eHVFDTsPgrAUczciWrN/GDVdqYebnyOFbMt+U36kvusJkohfOPlxGbm+SLeKkZFJs5/nyK7sN9Unck+OiF9fTvnast+TH7Hs9K1YlSkpEVuz34FCwhHoPbJjOvzjJ+6jTAR5Ew9Trnralf0elAUyIDkSpWYQO/7rDRXxyxHind5+VBBP/HpBkS4iS9C2cnVhHCo2Zv8wavQ7CANRRUNsQZ6827Lf5VdxSRNedR6Ljv/6gMJVw5EyjOUJKdtGrdk/iroWZ0+djELBcQ7vy36LXqOVVhuzSobUamvLflN9Ii5uFYqoUmTt4vjVGwoIhTLiy/MEyelv38bS3zbhvbIGXSWKPby6oq55iYn2Ni8vVPRlv1WvKZgYmREfvdax9rcdtmttreVcV/ab6hO284Wc8F2ZGCWlC+vM/lnU0t9+6B8P6pdQ/xz3EhlDweJkAAAAAElFTkSuQmCC" alt="QR عمر وسلمى">
+      </a>
+      <div class="card-hint">رسوم متحركة  إماراتي</div>
+    </div>
+    <div class="card" data-name="الأرض الطيبة" data-type="مسلسل" data-country="الإمارات">
+      <div class="card-num">137</div>
+      <div class="card-name">الأرض الطيبة</div>
+      <div class="card-meta">مسلسل · الإمارات</div>
+      <a href="pages/137.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB8ElEQVR4nO2awW7DMAxDH4f8/y9zB0m2s/SwU6xh1iFIawIlCMmm5Mr8Ir5+Azqog3rEBYo3CwyyLCM8V9qy36IXBhBWCqRQSq6Vtuw3oaShj8EGY82V3ux3oSxkCO0y6zrwaoW6lvepkEBHr09xQQmVW7yFUZRjSdiV/R698hjEcug0cqtWurJ/H3Uru8is/HJd6cp+CypshARYsoRrz1euNmb/MuoC0p4K8qmZYmHCurLfgvLML6Qw+vOsPPn1QJl42HJ6VkJGCevk1w9U1F4aCZCIYgyv75Nfd5RAtpGRTORbOYk4DBqzfx/l6KoXd1+COWYVrdm/jBr9UHn7PCqzRH3Ox8+o3LRi1yq1cjfrz/491DVmXRFGY2QY0509vHqjbCThSKmaEh5//ww5j8JstUMw5WA6N7K27LfUY2gTFTk8mOsDx68+UR7XHRH2GOLr+NVbxLR+dEFM1ZyDfOyu7DfNv0bd1Rdoabp17tOWyC4xxHF+tEe+mZNfS9zbIAGMadhMuq7st/lVqvhcg7AwrsRApyv7Pf1j3W+PeaoW4+rTD61xwbidjZwie+4cUWzi9VdQc74aL+f/APdY7rdlzU4oX3O435X9JpTTUHjs8MuNrU8/tMRyvy2MZSsrEShP0ZX9Vv/10i8e1H9CfQNml+lHiWbSswAAAABJRU5ErkJggg==" alt="QR الأرض الطيبة">
+      </a>
+      <div class="card-hint">مسلسل إماراتي</div>
+    </div>
+    <div class="card" data-name="شاهد ما شافش حاجة" data-type="مسلسل" data-country="الإمارات">
+      <div class="card-num">138</div>
+      <div class="card-name">شاهد ما شافش حاجة</div>
+      <div class="card-meta">مسلسل · الإمارات</div>
+      <a href="pages/138.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAACAUlEQVR4nO2a0WpkMQxDj5b7/7+sfbCdZHYp9OnapclDyUwEI4xiy05lvrH+fAd0URf133pAsTPIIMuqfZ1MZd8SLwwgBLIAGdnsk7Hsm1BSKMkIA4rg7ZPR7F9FPcfeAqMQVSqsi9cPQBmXqACn5vp5jUI9kGkKZCvyPZHz18lU9j3xSiHJMt6qkutkLPuWeB15ShD30pnM2ngNRoWIBNiksQh1qQrkYPbvoyyBnGpy2Aoh2yiq5mD2DSh7iSr+KC6kKH8xmf27qGh74h4CRF08v+HG61jProNGcTXjDsrOsN3+ca8HnFZeztB5fSiNTWXfdh8jSpGwSCuGqPBNZd/jJ2wIax+pP29khevWx0+UFVkro1QdN6sSjGb/MirHgl4fMvfLlc7cwms2ykJS6uqw+WXKZrN/EyUjq/RUSZ9SXUpvKvsmP0E6rqiTWu6CGiBOZd/Ub9taOd45jt7zwusn/kG5iqLXCN8KaxFDitHsG1CKHB/eK7K9FV/6+q+PlVl+TVXLQeTTWihtLPse/7W3qsaoKmPO8aey75lPxM4Om8rWlrLzHsu+a15oH/OuSPiwWvDZ7N9FPbAbovXKHVor5zqXfTfKaSWk/T6kWx+/QBlU/bfyAeTOJz7X+b5d/xHgyPt5RW99PNf5vs2y+tVrZx8+ln2r/3rpFy/qN6H+AmnR5WRBFQJQAAAAAElFTkSuQmCC" alt="QR شاهد ما شافش حاجة">
+      </a>
+      <div class="card-hint">مسلسل إماراتي</div>
+    </div>
+    <div class="card" data-name="أبناء الغد" data-type="مسلسل" data-country="قطر">
+      <div class="card-num">139</div>
+      <div class="card-name">أبناء الغد</div>
+      <div class="card-meta">مسلسل · قطر</div>
+      <a href="pages/139.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB+UlEQVR4nO2aUWsDMQyDP437/39Ze7CdpFcKfbp4LClrj0ZQYRxbVibzxfr5BnRQB/W2LlA8GWGQZRnkZacr+y3xwgBCWBYgI5u505b9nnihiIwVKYaI4I2druw3xauWhVEl1dIJurLfijJynEcBlprwaoW6YGSSLEe9j8e505X9nnhlIkVnnFkl105b9lvidVesjtdawbqy34KKJIqaRQgLIrsEknbxaokK0VBdMaQXqLJLYB29+oqyI6kilxCKAynISHZm/ywq80sxDaVKnbIV4MRrWUOdUoLeeQYzhHDO4w0lbC8BsnMk4tT7+4p5KCpVVvus9xW9cx5vKFnGluRwdaIrZkHDx594RTmaowGpFAWRcClZG7N/GJVDz1Bfs/avJb8r+036C2uKr6j3qcjyq87sn0XVUO3XcbuswuMXvqOiypeHY2ObcKQrZo3ZP4y6hkRNzaVU+dPYOXpiWdUOx6Gs6cglK0681lX+vauU5YBkYVyNsiv751HRDOefDbbtMgsNdlf2u+bteizBpeqM6eN3Zb+p3gNgy56nMT7zrSv7XX6hnfe1498CatLWRl4dUev9tqwypz0uIL2H159ACWMLS/N+SEevfkCVDhNYYYQdf+K21vtthkvo0F9w/InbWu+3p8dac2PK1bbst+qvh37xoP4T6hd/NvhL68OXdQAAAABJRU5ErkJggg==" alt="QR أبناء الغد">
+      </a>
+      <div class="card-hint">مسلسل قطري</div>
+    </div>
+    <div class="card" data-name="الخيانة" data-type="مسلسل" data-country="قطر">
+      <div class="card-num">140</div>
+      <div class="card-name">الخيانة</div>
+      <div class="card-meta">مسلسل · قطر</div>
+      <a href="pages/140.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB9UlEQVR4nO2azY4bMQyDySLv/8pfD5Q9nm0Pe6mtRa1DMrEJDCHoXzH6hvz6DuiiLuoP+UjOE0ZGFhZSnnPTlv0RfQlJ0ZOkaIyc1k1b9mf0JZd2YmHkZHxzhNcPQNmSseQozU149UXFtjTN6t+/8cehPtJbN8i4PudNV/Zn9DUcD2M8IpmWm67s96P82Fby4kySq9l1Zb8fJRBU4AItP5b7ruyPoEbFRQowG0GdIPsUr74o5HJMkHj5IqI5+60oz0xYZb3X2+qL2rI/Er8QizUlYmkGshu/XhKTYj6JMjmcAuP2Q19R8UA/JYStnBonCTRmvx8Fkh2fjEHN8muosDH7Q6hyvKUNIqnx1hNvqXAP0hP4KXVRRUZX9mf80QIbhAzPlLDi/60n3ijLqrhegWzOV8eIpzH7/SjWcT3M7CiMkzYbs9+PijGNwaqjMWTPsU5n9ptRY9A1lh0pupaZ2O2H/oqaA8I4oCth1tqoO/t9qM8oSj0/ZAnLmmdt2R/R10iEmVJgKP9kdElt2R+zL82Jl9N+u2ZiiWZd2Z9BAXNOmG7y6SC5++2XLPvtJSWOkcXIA13ZH9JXBLta7i9/qOjL/iwqm0fJll0dEjfev2Tdbzu2VWblZa3Wlf0ZlO3810RO3YVmv+0b71+y7Lc3vfGi/ifUb6prBSb4ap3AAAAAAElFTkSuQmCC" alt="QR الخيانة">
+      </a>
+      <div class="card-hint">مسلسل قطري</div>
+    </div>
+    <div class="card" data-name="ظل الريح" data-type="مسلسل" data-country="قطر">
+      <div class="card-num">141</div>
+      <div class="card-name">ظل الريح</div>
+      <div class="card-meta">مسلسل · قطر</div>
+      <a href="pages/141.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB80lEQVR4nO2Zwa5jIQxD7VH//5fPLBy49HXzNgOphqil9GLpWlEITjD6hf35DeiiLurDXpIzQzKSMUYWy0pX9kf8JSTJsjCWZORs01ppy/6Mv+TVZ/lvYeZKV/aH/FVGbUjpceEpXl+AQpYtZcBuwqsV6iXNSDKufF/jXOnK/oy/KpByMnpdHX+6st+PMsvUSpb/p2/8elSCaO4+54FlWxk6s9+MimjAlak8zsg6HyviurI/E18gmLEky4g6IOO/xuw3o4yS6RNllb+mbJWk66/VQEI89U++5BmAoCv7IygQyidxBVUS6eb7n/ZSZfcYRpXvh/fufvyBymFIMjsVWaT2zqwz+/2okeIVL63NnCEzGrPfjKqmTUnVxXHEcb79nDdLP4dZKaaR41JhpTbasj+lv9beV+LrcdyNr08UOD1VWQiI6p8+681+J+o1y0frKb0xi8boy/4MCgnnUKQyPB7Tq1c/UU7BTbJ8VZQu5X/112olGUqXPjXRFP343j8u9tZfnX0vj5PREbNd2R/K95KUHVkJf/7W0JX9oXwPzDAbCT/zcmZn9ntR6/02HtkM5gUkZ3h9Ayr+wcLVbJVye/sN7PejRrXtCrXRbT3NqxNqvd9+eqx43Bjd/sS7rffbU0ow6sbq67Rlf1R/bXrjRf1PqL/t3vBHWyrU4wAAAABJRU5ErkJggg==" alt="QR ظل الريح">
+      </a>
+      <div class="card-hint">مسلسل قطري</div>
+    </div>
+    <div class="card" data-name="حب لا يموت" data-type="مسلسل" data-country="قطر">
+      <div class="card-num">142</div>
+      <div class="card-name">حب لا يموت</div>
+      <div class="card-meta">مسلسل · قطر</div>
+      <a href="pages/142.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB7ElEQVR4nO2ZwY7jMAxD+Rb9/1/mHig56bSHOcVarN3CTRoCJQSJplSsX6w/vwEd1EF9rJdEriwk3258PZnKfku8ZClRc+/GEl5PprLfhIJkUqKllXLryWj221Cu3KJupvCaiqr0+nJi/gvsn0G9pI5QNMskyfKld/GaipI7nfzl1ZCp7J9H4bdrXOK1pH8Tr8EoJATZJCflLLHOycHsN6GiW/GrUN4LKdt09s+hSr86paSlW/m0fPTrJyoHo5EsY8kVLJe+jWb/NMolVgkbQiVk0EU5mP3zKCyQRbfXyHLHbx+vkSjZzpZ3i1b7/Dycyn6XfiEMZe0lGVyFevTrA2VMFSHRe6njpjOfeF92V+NyEF2a3RSdenxDRemxrhFh1SWugetg9g+jXpKukapLtjBVpke/PlEIGSVmoKszOvPoryhb2HgNDLlqkeNXf6ByBlItdhw+14zCu3iNREXW115+olKNtvhT2e/qh5Scyqyw+6IMxuSjX7d1m6+ynGsOSlY5jmW/xU90m3113G3yV8Smst/UD9muyPga66ib7VOP9+U1R3U12G6L3x+nH/qKqgMSEkQSQHzq8TsqQt8tNyIjiuPv7+v2/7Yi8DFhZb4qelPZb/ETawzd3eL6atmKqey3+q+HfvGg/ifUXyhDHfy9Z6HzAAAAAElFTkSuQmCC" alt="QR حب لا يموت">
+      </a>
+      <div class="card-hint">مسلسل قطري</div>
+    </div>
+    <div class="card" data-name="صلالة طلق" data-type="فيلم" data-country="عُمان">
+      <div class="card-num">143</div>
+      <div class="card-name">صلالة طلق</div>
+      <div class="card-meta">فيلم · عُمان</div>
+      <a href="pages/143.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB8UlEQVR4nO2ZzW7DMAyDPw59/1fmDvqp0+3Qy2IVsxAUbkwghCDbFC3zRny9Azqog/oRD1CMjDDIsmpcM1PZb8kXBhAysoBKV8+MZb8nXygyIzJPkTS5Z6ay35SvJYyqqJaTYCr7rSg7tywJsDSE1yjUA7qSZHK/z9+emcp+T76ykOJk1Dpbf6ayvx8lL0P58uJvvvjxqCii3rMUL4Qk4mcy+5tRIRqcUjWf0GGpLKyjVy8o2TgSVJVlnAdk5G8w+5tRdSZigYXjRctW4ORriV6DqubHuQb73VmPV5TzUYn61K2xOM9+f4kH2V+nNJXTpGBtuqey37TfAzaqRRinIpEyfPyJK8pC2TRSGxoQBpj38RqJUoqIl1MxTcNak1PZ70EZI0nlTzjS1lv+bPb3orK+2oR+aq4SsKe+1tCSmdBdZRi6uqKjv64oGQs7miBAQotfePTEK8o4dKlqh7dwDI9e/QXV5RXdN8gSdMnNZn8nKvzVZZuPynLJspiayn6TP9HD8r26QwrPdSz7LfVVteWQFaRdSJs9c9nvWY914ZihyBylwrbwmopa77dRLsDMWDdKY9nvRQns8FrTNoRoxD+B/f0op1svsMIIO/7ES6z327RLGFUGHH/iJdb77ZYSz8ui6MPHst+qv2764kH9J9Q3Yn3oYlkUWkMAAAAASUVORK5CYII=" alt="QR صلالة طلق">
+      </a>
+      <div class="card-hint">فيلم عُماني</div>
+    </div>
+    <div class="card" data-name="ملاك وشيطان" data-type="مسلسل" data-country="عُمان">
+      <div class="card-num">144</div>
+      <div class="card-name">ملاك وشيطان</div>
+      <div class="card-meta">مسلسل · عُمان</div>
+      <a href="pages/144.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB+UlEQVR4nO1aQW7DMAwjh/7/y9yBlOO0G9BLbQ2zDoUbEwghyBIthcIb9vUO6KAO6sUeAL0SCAEUxVrXTlf2W/wFAQBBiCIACl7UTlv2e/wF2jOiwwqMz8ZOV/ab/BWzc+igoqZK0JX9VpQSWiABiGzCqxXqASRNJbIoivkdO13Z7/FXAsmVkfNu/enKfj2KmpbU7cFn3vjnUQ6ikbPoBwRJ+Kcz+8UoiwZFqg4ZoQgJAuLRqzcUJUCjMIKgoBRI+68x+8Uoa/kRSqh1aQsAx1+T5fTlwpizCeVo2m3nPN5Rgq5sBQtXJrxOvn9FkSApjtQFCpAScuc83lF0TFGUD2ZSGaGsOrNfjxJxya5SFPDdOxeixuwXo9K0QVXFanzxlvK7st+FUiX2ke/BK+V3Z78eRRdJn0yQqZGqHkVv9otRaRMiWlVQnJWtE19PqFINdfroXn41c058zSZBJVgTWn4iBxsgqSv79SjPO5R7tXKXBMXIfp7+xGyRDHW1ni6S6bSKZ/442dxfvdxlmV9X8b7st5zHii13c8QrtjIA6ct+U31Uknt1pvVUM1uzX4ua59tJ7qqO6/VJQFf2e1G0ZrX2qg4+ePTqL6hSFQREN8JOf+LJ5vm2tQOhRBmA0594snm+XZ+bZJrmiaROfZztx3H2R994UP8J9Q3fa/ZL1C5JqwAAAABJRU5ErkJggg==" alt="QR ملاك وشيطان">
+      </a>
+      <div class="card-hint">مسلسل عُماني</div>
+    </div>
+    <div class="card" data-name="أبو صالح" data-type="مسلسل" data-country="عُمان">
+      <div class="card-num">145</div>
+      <div class="card-name">أبو صالح</div>
+      <div class="card-meta">مسلسل · عُمان</div>
+      <a href="pages/145.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB+ElEQVR4nO2a3a7bMAyDPw59/1fmLij/tMWAc7NYw2y0gRMTKCEoEk1X5gfj109AF3VRX+MFyswggyzLCG8rXdkfiRcGEAJZgFyTsdKW/Zl4oYqMJZx7VbZlpSv7Q/Fao17KFcJTvLqitngZXGVrTo/x6op6wcwkWVXv6zpXurI/E69qg+mM2lfHTVf2z6PkbSq8P/g7v/jPo5JEAmyVsAAhiVw6s38eZQnJTMllhJBtBL766x0lpx3imVnGWCn4cmv2J1CisoxEL7rV1KPm7B9FYYPrihlf1zPb2F3ZH9ETfvuUsFd1yptf3yghSSny8tgTeSj8W7/eUanuEfVJsHTFurn98QPlCK25KRrTsZM8xaslSiUiUquW8RXTsHzDtuzPoFKyJFeKOcETQ4+1Zv8sqprgMqHTEIdVeP3Cj/Fa+8eq7S7D0PUIXf9+jRfphVNrudJtGTtXT3yi7PTI0hPlrtb7ef2Jb1Si41wj7yVw9t3d2T+JSjMcX+am0cOKNnf/uI3dXyV2tIcqq9PbI7y6orbzbac3zmPbITZuvf9A5f2b6lTD2Vl/CejM/lnUfr7tqVuTa+svAV3Zn0XFVLXir44Tbt3++AeU6zRI4DLCrj/xMfbzbaYjYQ2z8PoT72M/32ZEbB0WpZ61ZX9Ufz30ixf1P6F+A1Mx+kczR1l0AAAAAElFTkSuQmCC" alt="QR أبو صالح">
+      </a>
+      <div class="card-hint">مسلسل عُماني</div>
+    </div>
+    <div class="card" data-name="حارس الجبل" data-type="مسلسل" data-country="عُمان">
+      <div class="card-num">146</div>
+      <div class="card-name">حارس الجبل</div>
+      <div class="card-meta">مسلسل · عُمان</div>
+      <a href="pages/146.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB9klEQVR4nO2ZwY7cMAxDySL//8uvB0pOZreHvTRWUTsDw5kQCCHINKUY/WD8+gnooA7q27gkZ4Us8bjhfjKV/ZZ4CamihiUhY7BZT6ay3xMvuWKGKmTurKsnU9lvRjm5lVQbxGsqCosvkfrLb/znUJfUETLCUEl279AtvKaiRKcTf7gaMpX9+yjzZV3ilYNyH6/BKEuWrVwiKYdyu4/XaBTxEZmteC9Lmaazfw/V+sVj6n+o+ejXBwrlYEwNhJGoYFH6Npj9FlTEimxIS7Yk7N6Us9m/jDKyhZNj5VpJJVTH52D2L6ME9LRMV47IljSOfn1HGYzJrhR2AlbiP539uyhSZVdueVVHEmXBJrN/F3X1AserxoJ195AEcir7LfHKWZjfXUzW3uTk18dIzYh5rFT9Ca/4TWW/q34Usmy7JIvVmtbpR3+Mq4PSHS9lM1Y3TEfvP4dZ+qWWMrqfLymiNpX9Hv1ascp5SPcpEkQzl/2e/kS1u2JOuV1qHp/+xHNcd+OmvkCyTgCkcrFT2W/zX5K4y6E2YmuzTmW/x9+Xa+gjErfzonsUU9nv1K/VI3x2XKtBMZX9xvpxNe8jaGX5a4NOZb81XrcH47b50f2p7DfFa7kHJ7e6/G6bMZb9Hv2qhehPj7f7yn9Hv9Z4ft9+540H9T+hfgM6fiX2lOjKmgAAAABJRU5ErkJggg==" alt="QR حارس الجبل">
+      </a>
+      <div class="card-hint">مسلسل عُماني</div>
+    </div>
+    <div class="card" data-name="طريق السعادة" data-type="مسلسل" data-country="عُمان">
+      <div class="card-num">147</div>
+      <div class="card-name">طريق السعادة</div>
+      <div class="card-meta">مسلسل · عُمان</div>
+      <a href="pages/147.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB8klEQVR4nO2a22oDMQxEz5T+/y9PH3Sxk1LI01pQK7Dx4oEMQpbGUmQ+sK9PQBd1Ub/sGxQrIwyyrFrXzlT2R/yFAYQsWYC8PAVoLvsz/kLhGVmKBQBy70xlf8hfaRYYVVBtlWAq+6MoRw4DCbA0hNco1Dd0JMnKfJ/P3pnK/oy/MpCiMmrfrZep7I/4612xevsc4zUYldWQJSzySyIek9k/jArRYGUsKeqjXBIDrKtXX1CyQ0tELCFknAUy/DeY/QmUdq3qcJUxyrM5m/2jqNATcQNy6C9ltNnlwbHsT9VHd67vxJVC/8bXq0V2z+q4aqSzDuS9aCr7I/7KYqj2VTjK5a57Hl9RzqoISH0QISPsGK+RqO5PdNJS1Ut3GRjL/pS/tl5qnc0Vafc8bla91Nb1zlf2pDaV/RmUcYaUsYztVP3ls8nsn0fVeCPTfcj61S+8+esN5Rh1dIc1rpNOXXH7E7vFvMMxScs1pPoyxHRtKvtD+X7Nz/poUp1W684fN9PqrgpX36uFV1yMxrJ/HoW9LZzFsgR+HEl7KvtD+d62WWOible0jJ3M/lnUPt/uznR2XEu5zmV/FiWyM22tRhi6evUPlEH1pwmFxrj9iTfb59t0l9CqiZHu/fHF9vl2PPcGYsrVseyP6q+HfvGi/hPqB1id8VEbHFs2AAAAAElFTkSuQmCC" alt="QR طريق السعادة">
+      </a>
+      <div class="card-hint">مسلسل عُماني</div>
+    </div>
+    <div class="card" data-name="بنت السلطان" data-type="مسلسل" data-country="عُمان">
+      <div class="card-num">148</div>
+      <div class="card-name">بنت السلطان</div>
+      <div class="card-meta">مسلسل · عُمان</div>
+      <a href="pages/148.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB/ElEQVR4nO2awW4jMQxDyUX+/5dfD5Q8k2wPPY1V1C5QeGICIQiNRMkx+sH69xPQQR3Uf+slOTskIxnj3vfJVPZb9BKSZBkZS9mg62Qs+00oO5GELCTZcqKrTkazfxT1uu2NhJygqgjbxWsq6qbXUstCIqG2i9dU1EtSC2Nc+b7+r5Op7PfoVWUwldH3036Yyn6LXp+OldvfNl6DUQkiS4qbyAdObUyBHMz+YVTld5ddNW1aE3eW8PGrbyiDiDIdWYh6in6D2T+MWv4hUSZce90bpansN6FKHCfM7EszgNMPfaDyMopuh0DdD518/w3qiimSutIZtcM/7+M7Ktkd2RgqsnC/nud9/EBRRktRqTturUowmv3DqBoL1qCrJ2DK0NCd0aay3+XvcU+6Ot/LV8ofzf5h1GUdqt2mZfMqnHPZ74wvudsgIK5/aTaY/S7UbUphy90c6fiJ9wUZrGaOIyjrCvlMAqay34WK/yqriiRjl5bHf91XWYbypdcVURuLjHqmst9UH2sreu7lroy5ux3L/nnU7X4biwjVsRWzcfL9BwqS3NdkugqA1k8CJrN/FvWSVkNEW3zD7WkLr9+AMqSBxDVsldKI/wb2z6OwV//tuIszn/hY9/vt+kWASKFcM4u57Pfo1ffby0rQfWPNdcay3+q/HvrGg/pLqC+pPfVL8LcM5AAAAABJRU5ErkJggg==" alt="QR بنت السلطان">
+      </a>
+      <div class="card-hint">مسلسل عُماني</div>
+    </div>
+    <div class="card" data-name="الحب لا يفهم الكلام" data-type="مسلسل" data-country="السعودية">
+      <div class="card-num">149</div>
+      <div class="card-name">الحب لا يفهم الكلام</div>
+      <div class="card-meta">مسلسل · السعودية</div>
+      <a href="pages/149.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB90lEQVR4nO2awc7bMAyDPw59/1fmDpQSt8WA/7JYw6xD4NQEQgiyTNOV+UH8+gnooA7qK16gjIwwyLIM8jIzlf2WfGEAISMLMjD3zFj2e/KFkhmREqtBVZi38JqKen28G3VRLTvBVPZbUa7SQgIsDeE1CvWCq5JkkCwrXf+emcp+T76qkLIzap3tl6nsn0fJy1Cky//VL/7zqBSRuDqY8i6JPCazfx5lCclkKTrKVcg2Ah/99Y6SjbuoKOXq2iCjLwazfxgVUWp1KaV/XbIV4ORrCflOTmWquv49c86Pd7zIIbuPiu68ldDXJl5TUdFflaUsx5gU7Vec9fiJkomUuBp/WllSdvbHT5SVHAmkayF2we3jNRKVjfHqXuWAEdPwavlT2e+pL2MhlUe4yvwWZYPZP4y6bGdXMWVDbKvw+IXfKNURiPbw3c3/ytlg9g+jyl9dbjdKVtzGztETXyjXYVHYwjXK+jz+xBrxV2XXsmz73sJJnM95aA2b+2rD2GDb7t8M9lT2e/bHHl57ZKmyur3dwmsqarnfzuqzaNFaJ+7T75dY7rcTipLo26HjT7zHer9dB213xtqfnst+Lypps7BuIwwdvfoHlJWaElhlIR5/4j3W++3+i4lx9Bccf+Ij1vvtPMvTKZ8ngmIq+63666EvHtT/hPoN9JDtVLnr054AAAAASUVORK5CYII=" alt="QR الحب لا يفهم الكلام">
+      </a>
+      <div class="card-hint">مسلسل سعودي</div>
+    </div>
+    <div class="card" data-name="جاك وزقاق 2" data-type="مسرحية" data-country="لبنان">
+      <div class="card-num">150</div>
+      <div class="card-name">جاك وزقاق 2</div>
+      <div class="card-meta">مسرحية · لبنان</div>
+      <a href="pages/150.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB80lEQVR4nO1aQW7DMAwjh/z/y9xBlOxkHdbLbBWwLkltAiMEWaaYUXgjvt4BHdRB/YgLYLwJBDT90Njpyn5LviAAkSwRgBBPqna6st+EIqOShEqe25p3WrPfhiKjtggA+g21nldblAg9MvXPf/HjUBeQGaIgSi4yuJdt4tUVdaEuSIACKILu/LXTlf16FDW/0xoiHmOrK/stKAIECYaOEOR7kqe+XqEEALLkIgDS2qvOZGP2i1GQSnYpMudzmOuC1JX9pvoSQMmHkRpJlPtbY/aLUZCQDavqLNYrb6e+Higih0fBqtU/fH22Zr8UxUwKBQohU1Vvlvxd2e9DUc4No8QYg5Gbf3f2a1FKISEy+j2QecPxJ24x9L1PX1WZDTHx+IVPFK1QVdlTNjad+rqFCylGbKVRyHQpjj/xEuXLkPTUKEx2zvGj7yhJKSfc5cFxFnnmxzmuNOvjCIIhXOlR0pXXlf0mverMWFhM8iIlflf2m/wJ3ebGYVEgDuuZH0dM/uoQXJ6IVB/WurLf1L8ARGGlo2ohURnryn7TPKS4IlHH0p87BIQt1pn9WtTwV6VcSH81H6d/jbjGK1M+KLV9KYuu7LeiROYdGc7EEK8fwH4Ravq+7bBVOP434PT7ObJtRQeT5qVcO/2rgvob05f9QXVHfQOupxgAMjokEAAAAABJRU5ErkJggg==" alt="QR جاك وزقاق 2">
+      </a>
+      <div class="card-hint">مسرحية لبناني</div>
+    </div>
+    <div class="card" data-name="الدكتور 2" data-type="مسرحية" data-country="الكويت">
+      <div class="card-num">151</div>
+      <div class="card-name">الدكتور 2</div>
+      <div class="card-meta">مسرحية · الكويت</div>
+      <a href="pages/151.html" target="_blank">
+        <img class="qr-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASgAAAEoAQAAAADDfFG0AAAB+ElEQVR4nO2azW7DMAyDPw55/1fmDpIcJ+uAXharmHVo3YZACUE/lFyZN+zrHdBGbdQPO0BxMsIgy6pzPenKfom/MIAQyAJkFGmaT9qyX+MvFJ4xEo7PwvJ40pX9In+VCSq00lHLeH0AylHDQAIsNeHVCnXAiCRZWe+RI8y8ildX1MFog9EZz6iS60lb9s+j5OkosF4J2K7sl6AiiAQ4mqPisyTipTP7BSgJyQzJZYSQbQTe+uuOcnglGiNCxtkgQ1+0Zv8oKoq6qUIf9WvIVoDtr8kOYlB0ClRROSg73bbnx9NSTzg9o+G3FPpaxKsrKuah8hKOui+r9hU7H++oSDwrY2pkZLhs98c7KhphFfzLMicjrDP7h1HT0oapYuXSsHKyK/vnUdicUtUeX5HSFWN3Zb9oflTEUy6iIXMx69cSXl1Rx0jAqu05cSumohD4XdkvQ2lKSiQ07Qu3nrihDFb2x6zwFo7j3k9crPb3cd9xru+dERdFrSv7ZfP22KoOVX8O4Pv+cbLLfpUaH2trUXv8ruzX9UewJ40/tD57//UDZduTQFW+lwpbxqsjar7fzkHbyB4XkF7D6xNQqs20dS4Q0d5P/IKqcUihx0pjLOfVCTXfb9fdkLFcsmLPjxeb77dJvZqqIv5F4d0fZ3t5nf2nv7hR/wn1DT7P6VOM8eeFAAAAAElFTkSuQmCC" alt="QR الدكتور 2">
+      </a>
+      <div class="card-hint">مسرحية كويتي</div>
+    </div>
+  <div id="noResults">لا توجد نتائج 🔍</div>
+</div>
+<script>
+function filterCards() {
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  const cards = document.querySelectorAll('.card');
+  let visible = 0;
+  cards.forEach(card => {
+    const show = !q || card.innerText.toLowerCase().includes(q);
+    card.style.display = show ? '' : 'none';
+    if(show) visible++;
+  });
+  document.getElementById('countBadge').textContent = visible + ' عمل';
+  document.getElementById('noResults').style.display = visible === 0 ? 'block' : 'none';
+}
+</script>
+</body>
+</html>
